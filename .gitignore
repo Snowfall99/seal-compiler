@@ -1,0 +1,4 @@
+*.o
+*.output
+seal-lex.cc
+lexer

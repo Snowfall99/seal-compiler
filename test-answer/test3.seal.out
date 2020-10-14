@@ -1,0 +1,25 @@
+#name "test3.seal"
+#4 var
+#4 OBJECTID s1
+#4 TYPEID String
+#4 ';'
+#5 OBJECTID s1
+#5 '='
+#5 CONST_STRING "test string"
+#5 ';'
+#6 var
+#6 OBJECTID s2
+#6 TYPEID String
+#6 ';'
+#7 OBJECTID s2
+#7 '='
+#7 CONST_STRING "haha\nhaha\nhh"
+#7 ';'
+#8 var
+#8 OBJECTID s3
+#8 TYPEID String
+#8 ';'
+#9 OBJECTID s3
+#9 '='
+#10 CONST_STRING "12 \n12"
+#10 ';'
