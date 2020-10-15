@@ -47,6 +47,8 @@ extern YYSTYPE seal_yylval;
  *  Add Your own definitions here
  */
 int commentLevel = 0;
+bool flag = true;
+int str;
 
 char* hex2Dec (char* hex) {
   int number;
@@ -56,79 +58,28 @@ char* hex2Dec (char* hex) {
   return res;
 }
 
-char* getstr1 (const char* str) {
+char* getstr (const char* str) {
   char *result;
-  int i, j;
+  int i = 1, j = 0;
   int len = strlen(str);
-  if (len == 2) {
-    result = "";
-    return result;
-  } else if (len > MAX_STR_CONST) {
-    return "ERROR";
-  }
   result = new char[MAX_STR_CONST];
-  i = 1;
-  j = 0;
+
   while (i < len - 1) {
     if (i < len-2 && str[i] == '\\') {
       if (str[i+1] == '\n') {
-        curr_lineno += 1;
         result[j] = '\n';
         i += 2; 
-      } else if (str[i+1] == 'n') {
-        result[j] = '\n';
-        i += 2;
-      } else if (str[i+1] == '0') {
-        return "null";
       } else if (str[i+1] == '\\') {
         result[j] = '\\';
         i += 2;
+      } else if (str[i+1] == '0') {
+        result[j] = '\\';
+        i += 1;
       } else {
         i++;
         while (i<len && str[i] != '\\') i++;
         i ++;
         j --;
-      }
-    } else {
-      result[j] = str[i];
-      i ++;
-    }
-    j ++;
-  }
-  result[j] = '\0';
-
-  return result;
-}
-
-char *getstr2(const char* str) {
-  char *result;
-  int i, j;
-  int len = strlen(str);
-  if (len == 2) {
-    result = "";
-    return result;
-  } else if (len > MAX_STR_CONST) {
-    return "ERROR";
-  }
-  result = new char[MAX_STR_CONST];
-  i = 1;
-  j = 0;
-  while (i < len - 1) {
-    if (i < len-2 && str[i] == '\\') {
-      if (str[i+1] == '\n') {
-        curr_lineno += 1;
-        result[j] = '\n';
-        i += 2; 
-      } else if (str[i+1] == 'n') {
-        result[j] = '\n';
-        i += 2;
-      } else if (str[i+1] == '\\') {
-        result[j] = '\\';
-        i += 2;
-      } else {
-        result[j] = '\\';
-        i++;
-  
       }
     } else {
       result[j] = str[i];
@@ -147,14 +98,13 @@ char *getstr2(const char* str) {
   * Define names for regular expressions here.
   */
 HEX         0x[A-Fa-f0-9]+
-DIGIT       [0-9]
-NUMBER      [1-9][0-9]*
-FLOAT1      [0-9].[0-9]+
-FLOAT2      [1-9][0-9]+.[0-9]+
-ERROR_IDENTIFIER   [A-Z_][a-zA-Z0-9_]*
+NUMBER      (0|[1-9][0-9]*)
+FLOAT       (0|[1-9][0-9]*).[0-9]+
+TYPE_IDENTIFIER   (Float|Int|Bool|String)
 OBJ_IDENTIFIER    [a-z_][a-zA-Z0-9_]*
 
-%Start COMMENT
+%Start COMMENT 
+%Start STRING
 
 %%
 
@@ -179,14 +129,28 @@ OBJ_IDENTIFIER    [a-z_][a-zA-Z0-9_]*
 <INITIAL>"<="       { return LE; }
 <INITIAL>"&&"       { return AND; }
 <INITIAL>"||"       { return OR; }
+<INITIAL>"+"        { return ('+'); }
+<INITIAL>"-"        { return ('-'); }
+<INITIAL>"*"        { return ('*'); }
+<INITIAL>"/"        { return ('/'); }
+<INITIAL>"<"        { return ('<'); }
+<INITIAL>">"        { return ('>'); }
+<INITIAL>"|"        { return ('|'); }
+<INITIAL>"%"        { return ('%'); }
+<INITIAL>"="        { return ('='); }
+<INITIAL>"."        { return ('.'); }
+<INITIAL>";"        { return (';'); }
+<INITIAL>"~"        { return ('~'); }
+<INITIAL>\{         { return ('{'); }
+<INITIAL>\}         { return ('}'); }
+<INITIAL>\(         { return ('('); }
+<INITIAL>\)         { return (')'); }
+<INITIAL>":"        { return (':'); }
+<INITIAL>","        { return (','); }
 
 
   /* int */
 <INITIAL>{NUMBER} {
-                    seal_yylval.symbol = inttable.add_string(yytext);
-                    return CONST_INT;
-                  }
-<INITIAL>{DIGIT}  {
                     seal_yylval.symbol = inttable.add_string(yytext);
                     return CONST_INT;
                   }
@@ -196,11 +160,7 @@ OBJ_IDENTIFIER    [a-z_][a-zA-Z0-9_]*
                     return CONST_INT;
                   }
   /* float */
-<INITIAL>{FLOAT1} {
-                    seal_yylval.symbol = floattable.add_string(yytext);
-                    return CONST_FLOAT;
-                  }
-<INITIAL>{FLOAT2} {
+<INITIAL>{FLOAT} {
                     seal_yylval.symbol = floattable.add_string(yytext);
                     return CONST_FLOAT;
                   }
@@ -220,26 +180,10 @@ OBJ_IDENTIFIER    [a-z_][a-zA-Z0-9_]*
                               seal_yylval.symbol = idtable.add_string(yytext);
                               return OBJECTID;
                             }
-<INITIAL>Float              {
+<INITIAL>{TYPE_IDENTIFIER}  {
                               seal_yylval.symbol = idtable.add_string(yytext);
                               return TYPEID;
                             }
-<INITIAL>Int                {
-                              seal_yylval.symbol = idtable.add_string(yytext);
-                              return TYPEID;
-                            }
-<INITIAL>String             {
-                              seal_yylval.symbol = idtable.add_string(yytext);
-                              return TYPEID;
-                            }
-<INITIAL>Bool               {
-                              seal_yylval.symbol = idtable.add_string(yytext);
-                              return TYPEID;
-                            }
-<INITIAL>{ERROR_IDENTIFIER}   {
-                                seal_yylval.error_msg = yytext;
-                                return ERROR;
-                              }
   /* comment */
 <INITIAL>"/*" { 
                 commentLevel += 1;
@@ -255,42 +199,81 @@ OBJ_IDENTIFIER    [a-z_][a-zA-Z0-9_]*
 <COMMENT>. {}
 
   /* string */
-<INITIAL>\"[a-zA-Z0-9_ \\\\\n]*\" { 
-                                    char* result = getstr1(yytext);
-                                    if (result == "ERROR") {
-                                      seal_yylval.error_msg = yytext;
-                                      return ERROR;
-                                    } else if (result == "null") {
-                                      seal_yylval.error_msg = "String contains null character '\\0'";
-                                      return ERROR;
-                                    }
-                                    seal_yylval.symbol = stringtable.add_string(result);
-                                    return CONST_STRING;
-                                  }
-<INITIAL>\`([a-z0-9A-Z_ \\\n])*\` { 
-                                    char* result = getstr2(yytext);
-                                    if (result == "ERROR") {
-                                      seal_yylval.error_msg = yytext;
-                                      return ERROR;
-                                    } else if (result == "null") {
-                                      seal_yylval.error_msg = "String contains null character '\\0'";
-                                      return ERROR;
-                                    }
-                                    seal_yylval.symbol = stringtable.add_string(result);
-                                    return CONST_STRING;
-                                  }
-                          
+<INITIAL>\" { BEGIN STRING; str = 0; yymore(); }
+<INITIAL>` { BEGIN STRING; str = 1; yymore(); }
+<STRING>\\0 { 
+              if (str == 0) {
+                yylval.error_msg = "String contains null character '\\0'"; 
+                flag = false;
+              } else {
+                yymore();
+              } 
+            }
+<STRING><<EOF>>   {
+                    yylval.error_msg = "EOF in string constant";
+                    BEGIN INITIAL;
+                    yyrestart(yyin);
+                    return ERROR;
+                  }
+<STRING>[ ] { yymore(); }
+<STRING>[^\\\"\`\n]* { yymore(); }
+<STRING>\\[^\n] { yymore(); }
+<STRING>\\\n { curr_lineno++; yymore(); }
+<STRING>\n {
+  if (str == 0) {
+    seal_yylval.error_msg = "newline in quotation must use a '\\'";
+    curr_lineno += 1;
+    BEGIN INITIAL;
+    return ERROR;
+  } else {
+    curr_lineno += 1;
+    yymore();
+  }
+}
+<STRING>\"  {
+              if (flag == false) {
+                flag = true;
+                BEGIN INITIAL;
+                return ERROR;
+              } else {
+                if (yyleng >= MAX_STR_CONST) {
+                  seal_yylval.error_msg = "String is too long.";
+                  BEGIN INITIAL;
+                  return ERROR;
+                } else {
+                  char* result = getstr(yytext);
+                  seal_yylval.symbol = stringtable.add_string(result);
+                  BEGIN INITIAL;
+                  return CONST_STRING;
+                }
+              }                 
+            }
+<STRING>`  {
+              if (flag == false) {
+                flag = true;
+                BEGIN INITIAL;
+              } else {
+                if (yyleng >= MAX_STR_CONST) {
+                  seal_yylval.error_msg = "String is too long.";
+                  BEGIN INITIAL;
+                  return ERROR;
+                } else {
+                  char* result = getstr(yytext);
+                  seal_yylval.symbol = stringtable.add_string(result);
+                  BEGIN INITIAL;
+                  return CONST_STRING;
+                }
+              }                 
+            }
+
   /* space */
 [ \t] {}
 \n    { curr_lineno++; }
 
   /* error */
-<INITIAL>@  { seal_yylval.error_msg = yytext; return ERROR; }
-
 <INITIAL>.	{
-  return yytext[0];
+  yylval.error_msg = yytext;
+  return ERROR;
 }
-
-
 
 %%

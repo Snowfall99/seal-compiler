@@ -13,13 +13,13 @@
 #6 ';'
 #7 OBJECTID s2
 #7 '='
-#7 CONST_STRING "haha\nhaha\nhh"
-#7 ';'
-#8 var
-#8 OBJECTID s3
-#8 TYPEID String
-#8 ';'
-#9 OBJECTID s3
-#9 '='
-#10 CONST_STRING "12 \n12"
+#9 CONST_STRING "haha\nhaha\nhh"
+#9 ';'
+#10 var
+#10 OBJECTID s3
+#10 TYPEID String
 #10 ';'
+#11 OBJECTID s3
+#11 '='
+#12 CONST_STRING "12 \n12"
+#12 ';'
