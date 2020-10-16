@@ -192,6 +192,11 @@ OBJ_IDENTIFIER    [a-z_][a-zA-Z0-9_]*
 <COMMENT>"/*" {
                 commentLevel += 1;
               }
+<COMMENT><<EOF>>  {
+                    seal_yylval.error_msg = "EOF in comment constant";
+                    BEGIN INITIAL;
+                    return ERROR;
+                  }
 <COMMENT>"*/" { 
                 if (--commentLevel == 0)
                   BEGIN INITIAL; 
@@ -203,14 +208,14 @@ OBJ_IDENTIFIER    [a-z_][a-zA-Z0-9_]*
 <INITIAL>` { BEGIN STRING; str = 1; yymore(); }
 <STRING>\\0 { 
               if (str == 0) {
-                yylval.error_msg = "String contains null character '\\0'"; 
+                seal_yylval.error_msg = "String contains null character '\\0'"; 
                 flag = false;
               } else {
                 yymore();
               } 
             }
 <STRING><<EOF>>   {
-                    yylval.error_msg = "EOF in string constant";
+                    seal_yylval.error_msg = "EOF in string constant";
                     BEGIN INITIAL;
                     yyrestart(yyin);
                     return ERROR;
