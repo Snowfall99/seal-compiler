@@ -237,7 +237,7 @@ OBJ_IDENTIFIER    [a-z_][a-zA-Z0-9_]*
                 return ERROR;
               } else {
                 if (yyleng >= MAX_STR_CONST) {
-                  seal_yylval.error_msg = "String is too long.";
+                  seal_yylval.error_msg = "String constant too long";
                   BEGIN INITIAL;
                   return ERROR;
                 } else {
