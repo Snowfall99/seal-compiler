@@ -1,0 +1,10 @@
+var a Int;
+
+func main() Void {
+    var x Int;
+    x = getA();
+}
+
+func getA() Int {
+    return a;
+}

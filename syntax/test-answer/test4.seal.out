@@ -1,0 +1,132 @@
+#1
+Program
+  #1
+  Call Declaration
+    (name)
+    test1
+    (parameters)
+    (
+    #1
+    Variable
+      (name)
+      x
+      (type)
+      Int
+    #1
+    Variable
+      (name)
+      y
+      (type)
+      Bool
+    )
+    (return type)
+    Int
+    (body)
+    #1
+    Statement Block
+      (variable declarations)
+      (
+      )
+      (statements)
+      (
+      #2
+      WhileStmt
+        (condition)
+        #2
+        <
+          (OP left)
+          #2
+          Object
+            (name)
+            x
+            (type)
+          : _no_type
+          (OP right)
+          #2
+          Const_int
+            (name)
+            5
+            (type)
+          : _no_type
+          (type)
+        : _no_type
+        (body)
+        #2
+        Statement Block
+          (variable declarations)
+          (
+          )
+          (statements)
+          (
+          #3
+          Assign
+            (left value)
+            x
+            (right value)
+            #3
+            +
+              (OP left)
+              #3
+              Object
+                (name)
+                x
+                (type)
+              : _no_type
+              (OP right)
+              #3
+              Const_int
+                (name)
+                1
+                (type)
+              : _no_type
+              (type)
+            : _no_type
+            (type)
+          : _no_type
+          )
+      #5
+      IfStmt
+        (condition)
+        #5
+        Object
+          (name)
+          y
+          (type)
+        : _no_type
+        (then)
+        #5
+        Statement Block
+          (variable declarations)
+          (
+          )
+          (statements)
+          (
+          #6
+          ReturnStmt
+            (return value)
+            #6
+            Const_int
+              (name)
+              3
+              (type)
+            : _no_type
+          )
+        (else)
+        #5
+        Statement Block
+          (variable declarations)
+          (
+          )
+          (statements)
+          (
+          )
+      #8
+      ReturnStmt
+        (return value)
+        #8
+        Const_int
+          (name)
+          8
+          (type)
+        : _no_type
+      )

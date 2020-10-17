@@ -1,0 +1,8 @@
+func add(x Int) Int {
+    var sum Int;
+    
+    for sum = 0;x > 0; x = x - 1 {
+        sum = sum + x;
+    }
+    return sum;
+}

@@ -1,0 +1,9 @@
+func test1(x Int, y Bool) Int {
+    while x < 5 {
+        x = x + 1;
+    }
+    if y {
+        return 3;
+    }
+    return 8;
+}

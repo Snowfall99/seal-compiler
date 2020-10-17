@@ -1,0 +1,322 @@
+#6
+Program
+  #6
+  Call Declaration
+    (name)
+    tan
+    (parameters)
+    (
+    #6
+    Variable
+      (name)
+      x1
+      (type)
+      Float
+    #6
+    Variable
+      (name)
+      y1
+      (type)
+      Float
+    #6
+    Variable
+      (name)
+      x2
+      (type)
+      Float
+    #6
+    Variable
+      (name)
+      y2
+      (type)
+      Float
+    )
+    (return type)
+    Float
+    (body)
+    #6
+    Statement Block
+      (variable declarations)
+      (
+      )
+      (statements)
+      (
+      #7
+      IfStmt
+        (condition)
+        #7
+        ==
+          (OP left)
+          #7
+          Object
+            (name)
+            x1
+            (type)
+          : _no_type
+          (OP right)
+          #7
+          Object
+            (name)
+            x2
+            (type)
+          : _no_type
+          (type)
+        (then)
+        #7
+        Statement Block
+          (variable declarations)
+          (
+          )
+          (statements)
+          (
+          #8
+          ReturnStmt
+            (return value)
+            #8
+            Const_float
+              (name)
+              0.0
+              (type)
+            : _no_type
+          )
+        (else)
+        #7
+        Statement Block
+          (variable declarations)
+          (
+          )
+          (statements)
+          (
+          )
+      #11
+      ReturnStmt
+        (return value)
+        #11
+        /
+          (OP left)
+          #11
+          -
+            (OP left)
+            #11
+            Object
+              (name)
+              y2
+              (type)
+            : _no_type
+            (OP right)
+            #11
+            Object
+              (name)
+              y1
+              (type)
+            : _no_type
+            (type)
+          : _no_type
+          (OP right)
+          #11
+          -
+            (OP left)
+            #11
+            Object
+              (name)
+              x2
+              (type)
+            : _no_type
+            (OP right)
+            #11
+            Object
+              (name)
+              x1
+              (type)
+            : _no_type
+            (type)
+          : _no_type
+          (type)
+        : _no_type
+      )
+  #16
+  Call Declaration
+    (name)
+    main
+    (parameters)
+    (
+    )
+    (return type)
+    Void
+    (body)
+    #16
+    Statement Block
+      (variable declarations)
+      (
+      #17
+      Variable Declaration
+        #17
+        Variable
+          (name)
+          x1
+          (type)
+          Float
+      #18
+      Variable Declaration
+        #18
+        Variable
+          (name)
+          x2
+          (type)
+          Float
+      #19
+      Variable Declaration
+        #19
+        Variable
+          (name)
+          y1
+          (type)
+          Float
+      #20
+      Variable Declaration
+        #20
+        Variable
+          (name)
+          y2
+          (type)
+          Float
+      )
+      (statements)
+      (
+      #21
+      Assign
+        (left value)
+        x1
+        (right value)
+        #21
+        Const_float
+          (name)
+          3.5
+          (type)
+        : _no_type
+        (type)
+      : _no_type
+      #22
+      Assign
+        (left value)
+        y1
+        (right value)
+        #22
+        Const_float
+          (name)
+          3.5
+          (type)
+        : _no_type
+        (type)
+      : _no_type
+      #23
+      Assign
+        (left value)
+        x2
+        (right value)
+        #23
+        Const_float
+          (name)
+          5.5
+          (type)
+        : _no_type
+        (type)
+      : _no_type
+      #24
+      Assign
+        (left value)
+        y2
+        (right value)
+        #24
+        Const_float
+          (name)
+          4.5
+          (type)
+        : _no_type
+        (type)
+      : _no_type
+      #25
+      Call
+        (name)
+        printf
+        (actual parameters)
+        (
+        #25
+        Actual
+          (expr)
+          #25
+          Const_string
+            (name)
+            tan = %f
+
+            (type)
+          : _no_type
+          (type)
+        : _no_type
+        #25
+        Actual
+          (expr)
+          #25
+          Call
+            (name)
+            tan
+            (actual parameters)
+            (
+            #25
+            Actual
+              (expr)
+              #25
+              Object
+                (name)
+                x1
+                (type)
+              : _no_type
+              (type)
+            : _no_type
+            #25
+            Actual
+              (expr)
+              #25
+              Object
+                (name)
+                y1
+                (type)
+              : _no_type
+              (type)
+            : _no_type
+            #25
+            Actual
+              (expr)
+              #25
+              Object
+                (name)
+                x2
+                (type)
+              : _no_type
+              (type)
+            : _no_type
+            #25
+            Actual
+              (expr)
+              #25
+              Object
+                (name)
+                y2
+                (type)
+              : _no_type
+              (type)
+            : _no_type
+            )
+            (type)
+          : _no_type
+          (type)
+        : _no_type
+        )
+        (type)
+      : _no_type
+      #27
+      ReturnStmt
+        (return value)
+        #27
+        No_expr
+      )

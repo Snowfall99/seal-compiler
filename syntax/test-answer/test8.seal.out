@@ -1,0 +1,241 @@
+#1
+Program
+  #1
+  Call Declaration
+    (name)
+    loop
+    (parameters)
+    (
+    #1
+    Variable
+      (name)
+      a
+      (type)
+      Bool
+    #1
+    Variable
+      (name)
+      b
+      (type)
+      Float
+    )
+    (return type)
+    Float
+    (body)
+    #1
+    Statement Block
+      (variable declarations)
+      (
+      )
+      (statements)
+      (
+      #2
+      WhileStmt
+        (condition)
+        #2
+        Object
+          (name)
+          a
+          (type)
+        : _no_type
+        (body)
+        #2
+        Statement Block
+          (variable declarations)
+          (
+          )
+          (statements)
+          (
+          #3
+          Assign
+            (left value)
+            b
+            (right value)
+            #3
+            +
+              (OP left)
+              #3
+              Object
+                (name)
+                b
+                (type)
+              : _no_type
+              (OP right)
+              #3
+              Const_int
+                (name)
+                1
+                (type)
+              : _no_type
+              (type)
+            : _no_type
+            (type)
+          : _no_type
+          #4
+          IfStmt
+            (condition)
+            #4
+            >=
+              (OP left)
+              #4
+              Object
+                (name)
+                b
+                (type)
+              : _no_type
+              (OP right)
+              #4
+              Const_float
+                (name)
+                99999.9
+                (type)
+              : _no_type
+              (type)
+            (then)
+            #4
+            Statement Block
+              (variable declarations)
+              (
+              )
+              (statements)
+              (
+              #5
+              Assign
+                (left value)
+                a
+                (right value)
+                #5
+                Const_bool
+                  (name)
+                  0
+                  (type)
+                : _no_type
+                (type)
+              : _no_type
+              )
+            (else)
+            #4
+            Statement Block
+              (variable declarations)
+              (
+              )
+              (statements)
+              (
+              )
+          )
+      #8
+      ReturnStmt
+        (return value)
+        #8
+        Object
+          (name)
+          b
+          (type)
+        : _no_type
+      )
+  #11
+  Call Declaration
+    (name)
+    main
+    (parameters)
+    (
+    )
+    (return type)
+    Void
+    (body)
+    #11
+    Statement Block
+      (variable declarations)
+      (
+      #13
+      Variable Declaration
+        #13
+        Variable
+          (name)
+          a
+          (type)
+          Bool
+      #14
+      Variable Declaration
+        #14
+        Variable
+          (name)
+          b
+          (type)
+          Float
+      #15
+      Variable Declaration
+        #15
+        Variable
+          (name)
+          result
+          (type)
+          Float
+      )
+      (statements)
+      (
+      #17
+      Assign
+        (left value)
+        a
+        (right value)
+        #17
+        Const_bool
+          (name)
+          1
+          (type)
+        : _no_type
+        (type)
+      : _no_type
+      #18
+      Assign
+        (left value)
+        b
+        (right value)
+        #18
+        Const_float
+          (name)
+          2.0
+          (type)
+        : _no_type
+        (type)
+      : _no_type
+      #20
+      Assign
+        (left value)
+        c
+        (right value)
+        #20
+        Call
+          (name)
+          loop
+          (actual parameters)
+          (
+          #20
+          Actual
+            (expr)
+            #20
+            Object
+              (name)
+              a
+              (type)
+            : _no_type
+            (type)
+          : _no_type
+          #20
+          Actual
+            (expr)
+            #20
+            Object
+              (name)
+              b
+              (type)
+            : _no_type
+            (type)
+          : _no_type
+          )
+          (type)
+        : _no_type
+        (type)
+      : _no_type
+      )

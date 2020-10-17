@@ -1,0 +1,19 @@
+func get_a(a Int) Int{
+    return a;
+}
+
+func get_b(b Int) Int{
+    return b;
+}
+
+
+func main() Void    { 
+    var a Int;
+    var b Int;
+
+    a=10;
+    b=100;
+    if get_a(a) > get_b(b) {
+        b=a;
+    }
+}

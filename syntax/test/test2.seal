@@ -1,0 +1,7 @@
+func main() Void {
+    var a Int;
+    var b Bool;
+    var c String;
+    var d Float;
+    printf("hahaha!");
+}

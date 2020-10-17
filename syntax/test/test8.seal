@@ -1,0 +1,21 @@
+func loop(a Bool,b Float) Float{
+    while a{
+        b=b+1;
+        if b>=99999.9{
+            a=false;
+        }
+    }
+    return b;
+}
+
+func main() Void    { 
+
+    var a Bool;
+    var b Float;
+    var result Float;
+
+    a=true;
+    b=2.0;
+
+    c=loop(a,b);
+}

@@ -1,0 +1,6 @@
+/*  just have var declarations */
+
+var a Int;
+var b Bool;
+var c String;
+var d Float;

@@ -1,0 +1,11 @@
+func add2(x Int) Int {
+    var sum Int;
+    sum = 0;
+    for ; x > 0; x = x - 1 {
+        if x % 2 == 0 {
+            continue;
+        }
+        sum = x + sum;
+    }
+    return sum;
+}
