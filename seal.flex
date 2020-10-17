@@ -141,6 +141,7 @@ OBJ_IDENTIFIER    [a-z_][a-zA-Z0-9_]*
 <INITIAL>"."        { return ('.'); }
 <INITIAL>";"        { return (';'); }
 <INITIAL>"~"        { return ('~'); }
+<INITIAL>"!"        { return ('!'); }
 <INITIAL>\{         { return ('{'); }
 <INITIAL>\}         { return ('}'); }
 <INITIAL>\(         { return ('('); }
