@@ -2,3 +2,4 @@
 *.output
 seal-lex.cc
 lexer
+test.seal
