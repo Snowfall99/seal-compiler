@@ -156,7 +156,6 @@
     %type <stmt> stmt
     %type <stmts> stmts
     %type <expr> expr
-    %type <exprs> exprs
     %type <ifStmt> ifStmt
     %type <whileStmt> whileStmt
     %type <forStmt> forStmt
@@ -170,11 +169,17 @@
 	// Add more here
 
     /* Precedence declarations go here. */
-	  %nonassoc '=' '<' LE
-    %left EQUAL
+    %right ELSE
+    %nonassoc '='
+    %left OR
+    %left AND
+	  %nonassoc '<' '>' EQUAL NE LE GE 
     %left '+' '-'
     %left '*' '/'
     %left '%'
+    %right UMINUS
+    %right '!' '^' '&' '|'
+    %right IF WHILE
 	// Add more here
     
 %%
@@ -263,7 +268,7 @@
       | CONST_BOOL {$$=const_bool($1);}
       | call {$$=$1;}
       | '(' expr ')' {$$=$2;}
-      | '-' expr {$$=neg($2);}
+      | '-' expr {$$=neg($2);} %prec UMINUS
       | expr '+' expr {$$=add($1, $3);}
       | expr '-' expr {$$=minus($1, $3);}
       | expr '*' expr {$$=multi($1, $3);}
@@ -282,11 +287,6 @@
       | '~' CONST_INT {$$=bitnot(object($2));}
       | CONST_INT '&' CONST_INT {$$=bitand_(object($1), object($3));}
       | CONST_INT '|' CONST_INT {$$=bitor_(object($1), object($3));}
-      ;
-
-    exprs: expr {$$=single_Exprs($1);}
-      | exprs expr {$$=append_Exprs($1, single_Exprs($2));}
-      | {$$=nil_Exprs();}
       ;
 
     call: OBJECTID '(' actuals ')' {$$=call($1, $3);}
