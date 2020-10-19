@@ -205,7 +205,6 @@
 
     variableDecls: variableDecl {$$=single_VariableDecls($1);}
       | variableDecls variableDecl {$$=append_VariableDecls($1, single_VariableDecls($2));}
-      | {$$=nil_VariableDecls();}
       ;
 
     variable:	OBJECTID TYPEID {$$ = variable($1, $2);}
@@ -216,8 +215,6 @@
       ;
 
     callDecl: FUNC OBJECTID '(' variables ')' TYPEID stmtBlock {$$=callDecl($2, $4, $6, $7);}
-      | FUNC OBJECTID '(' variables ')' stmtBlock {$$=callDecl($2, $4, NULL, $6);}
-      ;
 
     stmt: expr ';' {$$=$1;}
       | ifStmt {$$=$1;}
@@ -231,10 +228,13 @@
 
     stmts: stmt {$$=single_Stmts($1);}
       | stmts stmt {$$=append_Stmts($1, single_Stmts($2));}
-      | {$$=nil_Stmts();}
       ;
 
     stmtBlock: '{' variableDecls stmts '}' {$$=stmtBlock($2, $3);}
+      | '{' variableDecls '}' {$$=stmtBlock($2, nil_Stmts());}
+      | '{' stmts '}' {$$=stmtBlock(nil_VariableDecls(), $2);}
+      | '{' '}' {$$=stmtBlock(nil_VariableDecls(), nil_Stmts());}
+      ;
 
     ifStmt: IF expr stmtBlock {$$=ifstmt($2, $3, stmtBlock(nil_VariableDecls(), nil_Stmts()));}
       | IF expr stmtBlock ELSE stmtBlock {$$=ifstmt($2, $3, $5);}
@@ -280,8 +280,8 @@
       | expr NE expr {$$=neq($1, $3);}
       | expr GE expr {$$=ge($1, $3);}
       | expr '>' expr {$$=gt($1, $3);}
-      | expr '&' '&' expr {$$=and_($1, $4);}
-      | expr '|' '|' expr {$$=or_($1, $4);}
+      | expr AND expr {$$=and_($1, $3);}
+      | expr OR expr {$$=or_($1, $3);}
       | expr '^' expr {$$=xor_($1, $3);}
       | '!' expr {$$=not_($2);}
       | '~' CONST_INT {$$=bitnot(object($2));}
