@@ -77,9 +77,7 @@ char* getstr (const char* str) {
         i += 1;
       } else {
         i++;
-        while (i<len && str[i] != '\\') i++;
-        i ++;
-        j --;
+        j--;
       }
     } else {
       result[j] = str[i];
@@ -100,8 +98,9 @@ char* getstr (const char* str) {
 HEX         0x[A-Fa-f0-9]+
 NUMBER      (0|[1-9][0-9]*)
 FLOAT       (0|[1-9][0-9]*).[0-9]+
-TYPE_IDENTIFIER   (Float|Int|Bool|String)
+TYPE_IDENTIFIER   (Float|Int|Bool|String|Void)
 OBJ_IDENTIFIER    [a-z_][a-zA-Z0-9_]*
+WRONG_IDENTIFIER  [A-Z][a-zA-Z0-9_]*
 
 %Start COMMENT 
 %Start STRING
@@ -185,11 +184,17 @@ OBJ_IDENTIFIER    [a-z_][a-zA-Z0-9_]*
                               seal_yylval.symbol = idtable.add_string(yytext);
                               return TYPEID;
                             }
+<INITIAL>{WRONG_IDENTIFIER} {
+                              strcpy(string_buf, "illegal TYPEID ");
+                              seal_yylval.error_msg = strcat(string_buf, yytext);
+                              return ERROR;
+                            }
   /* comment */
 <INITIAL>"/*" { 
                 commentLevel += 1;
                 BEGIN COMMENT;
               }
+<INITIAL>"*/" { seal_yylval.error_msg = "Unmatched */"; return ERROR; }
 <COMMENT>"/*" {
                 commentLevel += 1;
               }
