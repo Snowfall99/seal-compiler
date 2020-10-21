@@ -75,6 +75,9 @@ char* getstr (const char* str) {
       } else if (str[i+1] == '0') {
         result[j] = '\\';
         i += 1;
+      } else if (str[i+1] == 't') {
+        result[j] = '\t';
+        i += 2;
       } else {
         i++;
         j--;
@@ -86,7 +89,6 @@ char* getstr (const char* str) {
     j ++;
   }
   result[j] = '\0';
-
   return result;
 }
 
