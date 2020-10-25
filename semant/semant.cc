@@ -101,8 +101,12 @@ static void install_calls(Decls decls) {
     for (int i=decls->first(); decls->more(i); i=decls->next(i)) {
         Symbol name = decls->nth(i)->getName();
         Symbol type = decls->nth(i)->getType();
-        if (decls->nth(i)->isCallDecl())
+        if (decls->nth(i)->isCallDecl()) {
             objectEnv.addid(name, &type);
+            if (name == Main && type != Void) {
+                semant_error(decls->nth(i))<<"main function should have return type Void."<<endl;
+            }
+        }
     }
 
 }
