@@ -1,0 +1,126 @@
+#3
+Program
+  #3
+  Call Declaration
+    (name)
+    main
+    (parameters)
+    (
+    )
+    (return type)
+    Void
+    (body)
+    #3
+    Statement Block
+      (variable declarations)
+      (
+      #4
+      Variable Declaration
+        #4
+        Variable
+          (name)
+          a
+          (type)
+          Bool
+      #5
+      Variable Declaration
+        #5
+        Variable
+          (name)
+          b
+          (type)
+          Bool
+      #6
+      Variable Declaration
+        #6
+        Variable
+          (name)
+          c
+          (type)
+          Int
+      )
+      (statements)
+      (
+      #8
+      Assign
+        (left value)
+        a
+        (right value)
+        #8
+        Const_bool
+          (name)
+          1
+          (type)
+        : Bool
+        (type)
+      : Bool
+      #9
+      Assign
+        (left value)
+        b
+        (right value)
+        #9
+        Const_bool
+          (name)
+          0
+          (type)
+        : Bool
+        (type)
+      : Bool
+      #11
+      IfStmt
+        (condition)
+        #11
+        ||
+          (OP left)
+          #11
+          Object
+            (name)
+            a
+            (type)
+          : Bool
+          (OP right)
+          #11
+          Object
+            (name)
+            b
+            (type)
+          : Bool
+          (type)
+        (then)
+        #11
+        Statement Block
+          (variable declarations)
+          (
+          )
+          (statements)
+          (
+          #12
+          Assign
+            (left value)
+            c
+            (right value)
+            #12
+            Const_int
+              (name)
+              777
+              (type)
+            : Int
+            (type)
+          : Int
+          )
+        (else)
+        #11
+        Statement Block
+          (variable declarations)
+          (
+          )
+          (statements)
+          (
+          )
+      #14
+      ReturnStmt
+        (return value)
+        #14
+        No_expr
+      )

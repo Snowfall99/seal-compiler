@@ -1,0 +1,387 @@
+#3
+Program
+  #3
+  Call Declaration
+    (name)
+    main
+    (parameters)
+    (
+    )
+    (return type)
+    Void
+    (body)
+    #3
+    Statement Block
+      (variable declarations)
+      (
+      #4
+      Variable Declaration
+        #4
+        Variable
+          (name)
+          a
+          (type)
+          Int
+      #5
+      Variable Declaration
+        #5
+        Variable
+          (name)
+          i
+          (type)
+          Int
+      #6
+      Variable Declaration
+        #6
+        Variable
+          (name)
+          j
+          (type)
+          Int
+      #7
+      Variable Declaration
+        #7
+        Variable
+          (name)
+          k
+          (type)
+          Int
+      )
+      (statements)
+      (
+      #8
+      Assign
+        (left value)
+        a
+        (right value)
+        #8
+        Const_int
+          (name)
+          0
+          (type)
+        : Int
+        (type)
+      : Int
+      #9
+      ForStmt
+        (init)
+        #9
+        Assign
+          (left value)
+          i
+          (right value)
+          #9
+          Const_int
+            (name)
+            0
+            (type)
+          : Int
+          (type)
+        : Int
+        (condition)
+        #9
+        <
+          (OP left)
+          #9
+          Object
+            (name)
+            i
+            (type)
+          : Int
+          (OP right)
+          #9
+          Const_int
+            (name)
+            5
+            (type)
+          : Int
+          (type)
+        : Bool
+        (loop)
+        #9
+        Assign
+          (left value)
+          i
+          (right value)
+          #9
+          +
+            (OP left)
+            #9
+            Object
+              (name)
+              i
+              (type)
+            : Int
+            (OP right)
+            #9
+            Const_int
+              (name)
+              1
+              (type)
+            : Int
+            (type)
+          : Int
+          (type)
+        : Int
+        (body)
+        #9
+        Statement Block
+          (variable declarations)
+          (
+          )
+          (statements)
+          (
+          #10
+          ForStmt
+            (init)
+            #10
+            Assign
+              (left value)
+              j
+              (right value)
+              #10
+              Const_int
+                (name)
+                0
+                (type)
+              : Int
+              (type)
+            : Int
+            (condition)
+            #10
+            <
+              (OP left)
+              #10
+              Object
+                (name)
+                j
+                (type)
+              : Int
+              (OP right)
+              #10
+              Const_int
+                (name)
+                5
+                (type)
+              : Int
+              (type)
+            : Bool
+            (loop)
+            #10
+            Assign
+              (left value)
+              j
+              (right value)
+              #10
+              +
+                (OP left)
+                #10
+                Object
+                  (name)
+                  j
+                  (type)
+                : Int
+                (OP right)
+                #10
+                Const_int
+                  (name)
+                  1
+                  (type)
+                : Int
+                (type)
+              : Int
+              (type)
+            : Int
+            (body)
+            #10
+            Statement Block
+              (variable declarations)
+              (
+              )
+              (statements)
+              (
+              #11
+              ForStmt
+                (init)
+                #11
+                Assign
+                  (left value)
+                  k
+                  (right value)
+                  #11
+                  Const_int
+                    (name)
+                    0
+                    (type)
+                  : Int
+                  (type)
+                : Int
+                (condition)
+                #11
+                <
+                  (OP left)
+                  #11
+                  Object
+                    (name)
+                    k
+                    (type)
+                  : Int
+                  (OP right)
+                  #11
+                  Const_int
+                    (name)
+                    5
+                    (type)
+                  : Int
+                  (type)
+                : Bool
+                (loop)
+                #11
+                Assign
+                  (left value)
+                  k
+                  (right value)
+                  #11
+                  +
+                    (OP left)
+                    #11
+                    Object
+                      (name)
+                      k
+                      (type)
+                    : Int
+                    (OP right)
+                    #11
+                    Const_int
+                      (name)
+                      1
+                      (type)
+                    : Int
+                    (type)
+                  : Int
+                  (type)
+                : Int
+                (body)
+                #11
+                Statement Block
+                  (variable declarations)
+                  (
+                  )
+                  (statements)
+                  (
+                  #12
+                  IfStmt
+                    (condition)
+                    #12
+                    &&
+                      (OP left)
+                      #12
+                      !=
+                        (OP left)
+                        #12
+                        Object
+                          (name)
+                          i
+                          (type)
+                        : Int
+                        (OP right)
+                        #12
+                        Object
+                          (name)
+                          k
+                          (type)
+                        : Int
+                        (type)
+                      (OP right)
+                      #12
+                      &&
+                        (OP left)
+                        #12
+                        !=
+                          (OP left)
+                          #12
+                          Object
+                            (name)
+                            i
+                            (type)
+                          : Int
+                          (OP right)
+                          #12
+                          Object
+                            (name)
+                            j
+                            (type)
+                          : Int
+                          (type)
+                        (OP right)
+                        #12
+                        !=
+                          (OP left)
+                          #12
+                          Object
+                            (name)
+                            j
+                            (type)
+                          : Int
+                          (OP right)
+                          #12
+                          Object
+                            (name)
+                            k
+                            (type)
+                          : Int
+                          (type)
+                        (type)
+                      (type)
+                    (then)
+                    #12
+                    Statement Block
+                      (variable declarations)
+                      (
+                      )
+                      (statements)
+                      (
+                      #13
+                      Assign
+                        (left value)
+                        a
+                        (right value)
+                        #13
+                        +
+                          (OP left)
+                          #13
+                          Object
+                            (name)
+                            a
+                            (type)
+                          : Int
+                          (OP right)
+                          #13
+                          Const_int
+                            (name)
+                            1
+                            (type)
+                          : Int
+                          (type)
+                        : Int
+                        (type)
+                      : Int
+                      )
+                    (else)
+                    #12
+                    Statement Block
+                      (variable declarations)
+                      (
+                      )
+                      (statements)
+                      (
+                      )
+                  )
+              )
+          )
+      #18
+      ReturnStmt
+        (return value)
+        #18
+        No_expr
+      )
