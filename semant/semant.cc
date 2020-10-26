@@ -3,6 +3,7 @@
 #include <stdarg.h>
 #include "semant.h"
 #include "utilities.h"
+#include <map>
 
 extern int semant_debug;
 extern char *curr_filename;
@@ -14,8 +15,12 @@ static Decl curr_decl = 0;
 typedef SymbolTable<Symbol, Symbol> ObjectEnvironment; // name, type
 ObjectEnvironment objectEnv;
 
-typedef std::map<Symbol, CallDecl_class> CallTable; 
+typedef std::map<Symbol, Symbol> CallTable;
 CallTable callTable;
+
+// globalVars stores global variables' name and type
+typedef std::map<Symbol, Symbol> GlobalVariables;
+GlobalVariables globalVars;
 
 // typedef std::map<CallDecl_class, Stmt_class> StmtTable;
 // StmtTable stmtTable;
@@ -102,13 +107,14 @@ static void install_calls(Decls decls) {
         Symbol name = decls->nth(i)->getName();
         Symbol type = decls->nth(i)->getType();
         if (decls->nth(i)->isCallDecl()) {
-            objectEnv.addid(name, &type);
-            if (name == Main && type != Void) {
-                semant_error(decls->nth(i))<<"main function should have return type Void."<<endl;
+            if (callTable[name] != NULL) {
+                semant_error(decls->nth(i))<<"Redefined function."<<endl;
+            } else if (type != Int && type != Void && type != String && type != Float && type != Bool) {
+                semant_error(decls->nth(i))<<"Function returnType error."<<endl;
             }
+            callTable[name] = type;
         }
     }
-
 }
 
 static void install_globalVars(Decls decls) {
@@ -116,7 +122,12 @@ static void install_globalVars(Decls decls) {
         Symbol name = decls->nth(i)->getName();
         Symbol type = decls->nth(i)->getType();
         if (!decls->nth(i)->isCallDecl()) {
-            objectEnv.addid(name, &type);
+            if (globalVars[name] != NULL) {
+                semant_error(decls->nth(i))<<"Global variable redefined."<<endl;
+            } else if (type == Void) {
+                semant_error(decls->nth(i))<<"var "<<name<<" cannot be of type Void. Void can just be used as return type."<<endl;
+            }
+            globalVars[name] = type;
         }
     }
 }
@@ -125,30 +136,111 @@ static void check_calls(Decls decls) {
     objectEnv.enterscope();
     for (int i=decls->first(); decls->more(i); i=decls->next(i)) {
         if (decls->nth(i)->isCallDecl()) {
-            
-        } else {
+            decls->nth(i)->check();
 
+            // check paras
+            // Variables vars = decls->nth(i)->getVariables();
+            // for (int j=vars->first(); vars->more(j); j=vars->next(j)) {
+            //     // main function should not have any paras
+            //     if (objectEnv.probe(Main) != NULL) {
+            //         semant_error(decls->nth(i))<<"Main function should not have paras"<<endl;
+            //     }
+            //     Symbol name = vars->nth(j)->getName();
+            //     Symbol type = vars->nth(j)->getType();
+                
+            //     /* No need to check paras' type because of syntax rules */
+
+            //     // check if there are duplicated paras
+            //     if (objectEnv.lookup(name) != NULL) {
+            //         semant_error(decls->nth(i))<<"Function "<<FuncName<< "'s parameter has a duplicate name "<<name<<endl;
+            //     }
+
+            //     objectEnv.addid(name, &type);
+
+            // }
+
+            // // check stmtBlock
+            // StmtBlock stmtblock = decls->nth(i)->getBody();
+            // Stmts stmts = stmtblock->getStmts();
+            // for (int i=stmts->first(); stmts->more(i); i=stmts->next(i)) {
+            //     Stmt stmt = stmts->nth(i);
+            //     stmt->check(FuncType);
+                
+            // }
         }
     }
     objectEnv.exitscope();
 }
 
 static void check_main() {
-    if (objectEnv.probe(Main) == NULL) {
+    if (callTable[Main] == NULL) {
         semant_error()<<"main function is not defined."<<endl;
+    } else if (callTable[Main] != Void) {
+        semant_error()<<"main function should have return type Void."<<endl;
     }
 }
 
 void VariableDecl_class::check() {
-    
+    cout<<"Helllo"<<endl;
+    Symbol name = this->getName();
+    Symbol type = this->getType();
+    if (type == Void) {
+        semant_error()<<"var "<<name<<" cannot be of type Void. Void can just be used as return type."<<endl;
+    } else {
+        objectEnv.addid(name, &type);
+    }
 }
 
 void CallDecl_class::check() {
+    objectEnv.enterscope();
+    Variables vars = this->getVariables();
+    Symbol funcName = this->getName(); 
+    Symbol returnType = this->getType();
+    StmtBlock stmtblock = this->getBody();
     
+    // main function should not have any paras
+    if (funcName == Main && vars->len() != 0) {
+        semant_error(this)<<"Main function should not have paras"<<endl;
+    }
+
+    for (int j=vars->first(); vars->more(j); j=vars->next(j)) {
+        Symbol name = vars->nth(j)->getName();
+        Symbol type = vars->nth(j)->getType();
+        
+        /* No need to check paras' type because of syntax rules */
+
+        // check if there are duplicated paras
+        if (objectEnv.lookup(name) != NULL) {
+            semant_error(this)<<"Function "<<funcName<< "'s parameter has a duplicate name "<<name<<endl;
+        }
+        objectEnv.addid(name, &type);
+    }
+
+    // check stmtBlock
+    VariableDecls varDecls = stmtblock->getVariableDecls();
+    for (int j=varDecls->first(); varDecls->more(j); j=varDecls->next(j)) {
+        varDecls->nth(j)->check();
+    }
+    Stmts stmts = stmtblock->getStmts();
+    objectEnv.exitscope();
 }
 
 void StmtBlock_class::check(Symbol type) {
+    // VariableDecls vars = this->getVariableDecls();
+    // Stmts stmts = this->getStmts();
+    // // check variables declarations
+    // for (int i=vars->first(); vars->more(i); i=vars->next(i)) {
+    //     VariableDecl var = vars->nth(i);
+    //     var->check();
+    // }
+
+    // // check stmt in stmtblock
+    // for (int i=stmts->first(); stmts->more(i); i=stmts->next(i)) {
+    //     Stmt stmt = stmts->nth(i);
+    //     // stmt->check(type);
+    // }
     
+
 }
 
 void IfStmt_class::check(Symbol type) {
@@ -164,7 +256,7 @@ void ForStmt_class::check(Symbol type) {
 }
 
 void ReturnStmt_class::check(Symbol type) {
-    
+
 }
 
 void ContinueStmt_class::check(Symbol type) {
@@ -293,13 +385,11 @@ Symbol No_expr_class::checkType(){
 }
 
 void Program_class::semant() {
-    objectEnv.enterscope();
     initialize_constants();
     install_calls(decls);
     check_main();
     install_globalVars(decls);
     check_calls(decls);
-    objectEnv.exitscope();
     
     if (semant_errors > 0) {
         cerr << "Compilation halted due to static semantic errors." << endl;
