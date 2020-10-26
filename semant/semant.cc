@@ -137,36 +137,6 @@ static void check_calls(Decls decls) {
     for (int i=decls->first(); decls->more(i); i=decls->next(i)) {
         if (decls->nth(i)->isCallDecl()) {
             decls->nth(i)->check();
-
-            // check paras
-            // Variables vars = decls->nth(i)->getVariables();
-            // for (int j=vars->first(); vars->more(j); j=vars->next(j)) {
-            //     // main function should not have any paras
-            //     if (objectEnv.probe(Main) != NULL) {
-            //         semant_error(decls->nth(i))<<"Main function should not have paras"<<endl;
-            //     }
-            //     Symbol name = vars->nth(j)->getName();
-            //     Symbol type = vars->nth(j)->getType();
-                
-            //     /* No need to check paras' type because of syntax rules */
-
-            //     // check if there are duplicated paras
-            //     if (objectEnv.lookup(name) != NULL) {
-            //         semant_error(decls->nth(i))<<"Function "<<FuncName<< "'s parameter has a duplicate name "<<name<<endl;
-            //     }
-
-            //     objectEnv.addid(name, &type);
-
-            // }
-
-            // // check stmtBlock
-            // StmtBlock stmtblock = decls->nth(i)->getBody();
-            // Stmts stmts = stmtblock->getStmts();
-            // for (int i=stmts->first(); stmts->more(i); i=stmts->next(i)) {
-            //     Stmt stmt = stmts->nth(i);
-            //     stmt->check(FuncType);
-                
-            // }
         }
     }
     objectEnv.exitscope();
@@ -181,7 +151,6 @@ static void check_main() {
 }
 
 void VariableDecl_class::check() {
-    cout<<"Helllo"<<endl;
     Symbol name = this->getName();
     Symbol type = this->getType();
     if (type == Void) {
@@ -217,46 +186,78 @@ void CallDecl_class::check() {
     }
 
     // check stmtBlock
+    // 1. check variableDecls
     VariableDecls varDecls = stmtblock->getVariableDecls();
     for (int j=varDecls->first(); varDecls->more(j); j=varDecls->next(j)) {
         varDecls->nth(j)->check();
     }
-    Stmts stmts = stmtblock->getStmts();
+
+    // 2. check stmts
+    stmtblock->check(returnType);
+
     objectEnv.exitscope();
 }
 
 void StmtBlock_class::check(Symbol type) {
-    // VariableDecls vars = this->getVariableDecls();
-    // Stmts stmts = this->getStmts();
-    // // check variables declarations
-    // for (int i=vars->first(); vars->more(i); i=vars->next(i)) {
-    //     VariableDecl var = vars->nth(i);
-    //     var->check();
-    // }
-
-    // // check stmt in stmtblock
-    // for (int i=stmts->first(); stmts->more(i); i=stmts->next(i)) {
-    //     Stmt stmt = stmts->nth(i);
-    //     // stmt->check(type);
-    // }
-    
-
+    Stmts stmts = this->getStmts(); 
+    for (int j=stmts->first(); stmts->more(j); j=stmts->next(j)) {
+        stmts->nth(j)->check(type);
+    }
 }
 
 void IfStmt_class::check(Symbol type) {
+    Expr condition = this->getCondition();
+    StmtBlock thenExpr = this->getThen();
+    StmtBlock elseExpr = this->getElse();
     
+    // If condition should be Bool
+    Symbol conditionType = condition->getType();
+    if (conditionType != Bool) {
+        semant_error(this)<<"Condition must be a Bool, got "<<conditionType<<endl;
+    }
+
+    // check thenExpr and elseExpr
+    thenExpr->check(type);
+    elseExpr->check(type);
 }
 
 void WhileStmt_class::check(Symbol type) {
-    
+    Expr condition = this->getCondition();
+    StmtBlock body = this->getBody();
+
+    // While condition should be Bool
+    Symbol conditionType = condition->getType();
+    if (conditionType != Bool) {
+        semant_error(this)<<"Condition must be a Bool, got "<<conditionType<<endl;
+    }
+
+    // check while body
+    body->check(type);
 }
 
 void ForStmt_class::check(Symbol type) {
-    
+    Expr init = this->getInit();
+    Expr condition = this->getCondition();
+    Expr loop = this->getLoop();
+    StmtBlock body = this->getBody();
+
+    // For condition should be Bool
+    Symbol conditionType = condition->getType();
+    if (conditionType != Bool) {
+        semant_error(this)<<"Condition must be a Bool, got "<<conditionType<<endl;
+    }
+
+    // check For body
+    body->check(type);
 }
 
 void ReturnStmt_class::check(Symbol type) {
-
+    Expr expr = this->getValue();
+    Symbol returnType = expr->getType();
+    // check if return Type match
+    if (returnType != type) {
+        semant_error(this)<<"Returns "<<returnType<<" , but need "<<type<<endl;
+    }
 }
 
 void ContinueStmt_class::check(Symbol type) {
