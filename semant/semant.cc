@@ -27,9 +27,14 @@ GlobalVariables globalVars;
 typedef std::map<Symbol, Symbol> LocalVariables;
 LocalVariables localVars;
 
+// MethodClass stores para type
+// MethodTable stores name and related paras
 typedef std::vector<Symbol> MethodClass;
 typedef std::map<Symbol, MethodClass> MethodTable;
 MethodTable methodTable;
+
+typedef std::map<Symbol, bool> InstallTable;
+InstallTable installTable;
 
 ///////////////////////////////////////////////
 // helper func
@@ -121,6 +126,8 @@ static void install_calls(Decls decls) {
                 semant_error(decls->nth(i))<<"Function printf cannot have a name as printf"<<endl;
             }
             callTable[name] = type;
+            installTable[name] = false;
+            decls->nth(i)->check();
         }
     }
 }
@@ -176,42 +183,60 @@ void CallDecl_class::check() {
     Symbol returnType = this->getType();
     StmtBlock stmtblock = this->getBody();
     
-    // main function should not have any paras
-    if (funcName == Main && vars->len() != 0) {
-        semant_error(this)<<"Main function should not have paras"<<endl;
-    } else if (callTable[Main] != Void) {
-        semant_error(this)<<"main function should have return type Void."<<endl;
-    }
-
     objectEnv.enterscope();
-    // // methodclass stores paras type
-    // MethodClass mclass;
-    for (int j=vars->first(); vars->more(j); j=vars->next(j)) {
-        Symbol name = vars->nth(j)->getName();
-        Symbol type = vars->nth(j)->getType();
-        
-        /* No need to check paras' type because of syntax rules */
+    // install paras
+    if (installTable[name] == false) {
+        // methodclass stores paras type
+        MethodClass mclass;
+        for (int j=vars->first(); vars->more(j); j=vars->next(j)) {
+            Symbol name = vars->nth(j)->getName();
+            Symbol type = vars->nth(j)->getType();
+            
+            /* No need to check paras' type because of syntax rules */
 
-        // check if there are duplicated paras
-        if (objectEnv.lookup(name) != NULL) {
-            semant_error(this)<<"Function "<<funcName<< "'s parameter has a duplicate name "<<name<<endl;
+            // check if there are duplicated paras
+            if (objectEnv.lookup(name) != NULL) {
+                semant_error(this)<<"Function "<<funcName<< "'s parameter has a duplicate name "<<name<<endl;
+            }
+            objectEnv.addid(name, &type);
+            localVars[name] = type;
+            mclass.push_back(type);
         }
-        objectEnv.addid(name, &type);
-        localVars[name] = type;
-        // mclass.push_back(type);
-    }
 
-    // // methodTable map paras to funcname
-    // methodTable[funcName] = mclass;
-    // check stmtBlock
-    // 1. check variableDecls
-    VariableDecls varDecls = stmtblock->getVariableDecls();
-    for (int j=varDecls->first(); varDecls->more(j); j=varDecls->next(j)) {
-        varDecls->nth(j)->check();
-    }
+        // methodTable map paras to funcname
+        methodTable[funcName] = mclass;
+        installTable[name] = true;
+    } else {
+        for (int j=vars->first(); vars->more(j); j=vars->next(j)) {
+            Symbol name = vars->nth(j)->getName();
+            Symbol type = vars->nth(j)->getType();
+            
+            /* No need to check paras' type because of syntax rules */
 
-    // 2. check stmts
-    stmtblock->check(returnType);
+            // check if there are duplicated paras
+            if (objectEnv.lookup(name) != NULL) {
+                semant_error(this)<<"Function "<<funcName<< "'s parameter has a duplicate name "<<name<<endl;
+            }
+            objectEnv.addid(name, &type);
+            localVars[name] = type;
+        }
+        // main function should not have any paras
+        if (funcName == Main && vars->len() != 0) {
+            semant_error(this)<<"Main function should not have paras"<<endl;
+        } else if (callTable[Main] != Void) {
+            semant_error(this)<<"main function should have return type Void."<<endl;
+        }
+
+        // check stmtBlock
+        // 1. check variableDecls
+        VariableDecls varDecls = stmtblock->getVariableDecls();
+        for (int j=varDecls->first(); varDecls->more(j); j=varDecls->next(j)) {
+            varDecls->nth(j)->check();
+        }
+
+        // 2. check stmts
+        stmtblock->check(returnType);
+    }
 
     objectEnv.exitscope();
 }
