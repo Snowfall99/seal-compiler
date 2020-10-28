@@ -22,8 +22,9 @@ CallTable callTable;
 typedef std::map<Symbol, Symbol> GlobalVariables;
 GlobalVariables globalVars;
 
-// typedef std::map<CallDecl_class, Stmt_class> StmtTable;
-// StmtTable stmtTable;
+// localVars stores local variables' name and type
+typedef std::map<Symbol, Symbol> LocalVariables;
+LocalVariables localVars;
 
 ///////////////////////////////////////////////
 // helper func
@@ -136,6 +137,7 @@ static void check_calls(Decls decls) {
     objectEnv.enterscope();
     for (int i=decls->first(); decls->more(i); i=decls->next(i)) {
         if (decls->nth(i)->isCallDecl()) {
+            localVars.clear();
             decls->nth(i)->check();
         }
     }
@@ -157,11 +159,11 @@ void VariableDecl_class::check() {
         semant_error()<<"var "<<name<<" cannot be of type Void. Void can just be used as return type."<<endl;
     } else {
         objectEnv.addid(name, &type);
+        localVars[name] = type;
     }
 }
 
 void CallDecl_class::check() {
-    objectEnv.enterscope();
     Variables vars = this->getVariables();
     Symbol funcName = this->getName(); 
     Symbol returnType = this->getType();
@@ -172,6 +174,7 @@ void CallDecl_class::check() {
         semant_error(this)<<"Main function should not have paras"<<endl;
     }
 
+    objectEnv.enterscope();
     for (int j=vars->first(); vars->more(j); j=vars->next(j)) {
         Symbol name = vars->nth(j)->getName();
         Symbol type = vars->nth(j)->getType();
@@ -183,6 +186,7 @@ void CallDecl_class::check() {
             semant_error(this)<<"Function "<<funcName<< "'s parameter has a duplicate name "<<name<<endl;
         }
         objectEnv.addid(name, &type);
+        localVars[name] = type;
     }
 
     // check stmtBlock
@@ -211,9 +215,9 @@ void IfStmt_class::check(Symbol type) {
     StmtBlock elseExpr = this->getElse();
     
     // If condition should be Bool
-    Symbol conditionType = condition->getType();
+    Symbol conditionType = condition->checkType();
     if (conditionType != Bool) {
-        semant_error(this)<<"Condition must be a Bool, got "<<conditionType<<endl;
+        semant_error(this)<<"condition type should be Bool, but found"<<conditionType<<endl;
     }
 
     // check thenExpr and elseExpr
@@ -226,9 +230,9 @@ void WhileStmt_class::check(Symbol type) {
     StmtBlock body = this->getBody();
 
     // While condition should be Bool
-    Symbol conditionType = condition->getType();
+    Symbol conditionType = condition->checkType();
     if (conditionType != Bool) {
-        semant_error(this)<<"Condition must be a Bool, got "<<conditionType<<endl;
+        semant_error(this)<<"condition type should be Bool, but found"<<conditionType<<endl;
     }
 
     // check while body
@@ -241,10 +245,12 @@ void ForStmt_class::check(Symbol type) {
     Expr loop = this->getLoop();
     StmtBlock body = this->getBody();
 
+    init->checkType();
+    loop->checkType();
     // For condition should be Bool
-    Symbol conditionType = condition->getType();
+    Symbol conditionType = condition->checkType();
     if (conditionType != Bool) {
-        semant_error(this)<<"Condition must be a Bool, got "<<conditionType<<endl;
+        semant_error(this)<<"condition type should be Bool, but found"<<conditionType<<endl;
     }
 
     // check For body
@@ -253,10 +259,15 @@ void ForStmt_class::check(Symbol type) {
 
 void ReturnStmt_class::check(Symbol type) {
     Expr expr = this->getValue();
-    Symbol returnType = expr->getType();
+    
     // check if return Type match
-    if (returnType != type) {
-        semant_error(this)<<"Returns "<<returnType<<" , but need "<<type<<endl;
+    Symbol returnType = expr->checkType();
+    if (returnType != Void) {
+        if (expr->is_empty_Expr() && type != Void) {
+            semant_error(this)<<"Returns Void, but need "<<type<<endl;
+        } else if (!expr->is_empty_Expr() && type != returnType) {
+            semant_error(this)<<"Returns "<<returnType<<" but need "<<type<<endl;
+        }
     }
 }
 
@@ -269,91 +280,295 @@ void BreakStmt_class::check(Symbol type) {
 }
 
 Symbol Call_class::checkType(){
-
+    Symbol name = this->getName();
+    Actuals actuals = this->getActuals();
+    
+    for (int i=actuals->first(); actuals->more(i); i=actuals->next(i)) {
+        actuals->nth(i)->checkType();
+    }
+    
+    if (callTable[name] == NULL) {
+        semant_error(this)<<"Object "<<name<<" has not been defined"<<endl;
+        this->setType(Void);
+        return type;
+    } 
+    this->setType(callTable[name]);
+    return type;
 }
 
 Symbol Actual_class::checkType(){
-
+    Symbol sym = expr->checkType();
+    this->setType(sym);
+    return type;
 }
 
 Symbol Assign_class::checkType(){
-    
+    if (objectEnv.lookup(lvalue) == NULL && globalVars[lvalue] == NULL) {
+        semant_error(this)<<"Undefined value"<<endl;
+    } 
+    Symbol ls = localVars[lvalue];
+    Symbol rs = value->checkType();
+    if (ls != rs) {
+        semant_error(this)<<"assign value mismatch"<<endl;
+    }    
+    this->setType(rs);
+    return type;
 }
 
 Symbol Add_class::checkType(){
- 
+    Expr lvalue = e1;
+    Expr rvalue = e2;
+    Symbol ls = lvalue->checkType();
+    Symbol rs = rvalue->checkType();
+
+    if (ls != rs && !(ls == Int && rs == Float) && !(ls == Float && rs == Int)) {
+        semant_error(this)<<"lvalue and rvalue should have same type."<<endl;
+    }
+    if ((ls == Float && rs == Int)||(ls == Int && rs == Float)) {
+        this->setType(Float);
+        return type;
+    }
+
+    this->setType(ls);
+    return type;
 }
 
 Symbol Minus_class::checkType(){
- 
+    Expr lvalue = e1;
+    Expr rvalue = e2;
+    Symbol ls = lvalue->checkType();
+    Symbol rs = rvalue->checkType();
+
+    if (ls != rs && !(ls == Int && rs == Float) && !(ls == Float && rs == Int)) {
+        semant_error(this)<<"Both lvalue and rvalue should be type Int"<<endl;
+    }
+    if ((ls == Float && rs == Int)||(ls == Int && rs == Float)) {
+        this->setType(Float);
+        return type;
+    }
+
+    this->setType(ls);
+    return type;
 }
 
 Symbol Multi_class::checkType(){
- 
+    Expr lvalue = e1;
+    Expr rvalue = e2;
+    Symbol ls = lvalue->checkType();
+    Symbol rs = rvalue->checkType();
+
+    if (ls != rs && !(ls == Int && rs == Float) && !(ls == Float && rs == Int)) {
+        semant_error(this)<<"Both lvalue and rvalue should be type Int"<<endl;
+    }
+    if ((ls == Float && rs == Int)||(ls == Int && rs == Float)) {
+        this->setType(Float);
+        return type;
+    }
+
+    this->setType(ls);
+    return type;
 }
 
 Symbol Divide_class::checkType(){
+    Expr lvalue = e1;
+    Expr rvalue = e2;
+    Symbol ls = lvalue->checkType();
+    Symbol rs = rvalue->checkType();
 
+    if (ls != rs && !(ls == Int && rs == Float) && !(ls == Float && rs == Int)) {
+        semant_error(this)<<"Both lvalue and rvalue should be type Int"<<endl;
+    }
+    if ((ls == Float && rs == Int)||(ls == Int && rs == Float)) {
+        this->setType(Float);
+        return type;
+    }
+
+    this->setType(ls);
+    return type;
 }
 
 Symbol Mod_class::checkType(){
+    Expr lvalue = e1;
+    Expr rvalue = e2;
+    Symbol ls = lvalue->checkType();
+    Symbol rs = rvalue->checkType();
 
+    if (ls != rs && !(ls == Int && rs == Float) && !(ls == Float && rs == Int)) {
+        semant_error(this)<<"Both lvalue and rvalue should be type Int"<<endl;
+    }
+    if ((ls == Float && rs == Int)||(ls == Int && rs == Float)) {
+        this->setType(Float);
+        return type;
+    }
+
+    this->setType(ls);
+    return type;
 }
 
 Symbol Neg_class::checkType(){
-
+    Expr value = e1;
+    Symbol sym = e1->checkType();
+    if (sym != Int && sym != Float) {
+        semant_error(this)<<"Neg_class should have Int type"<<endl;
+    }
+    this->setType(Int);
+    return type;
 }
 
 Symbol Lt_class::checkType(){
-
+    Expr lvalue = e1;
+    Expr rvalue = e2;
+    Symbol ls = e1->checkType();
+    Symbol rs = e2->checkType();
+    if ((ls != Int && ls !=Float) || (rs != Int && rs != Float)) {
+        semant_error(this)<<"ltype mismatch rvalue"<<endl;
+    }
+    this->setType(Bool); 
+    return type;
 }
 
 Symbol Le_class::checkType(){
-
+    Expr lvalue = e1;
+    Expr rvalue = e2;
+    Symbol ls = e1->checkType();
+    Symbol rs = e2->checkType();
+    if ((ls != Int && ls !=Float) || (rs != Int && rs != Float)) {
+        semant_error(this)<<"ltype mismatch rtype"<<endl;
+    }
+    this->setType(Bool); 
+    return type;
 }
 
 Symbol Equ_class::checkType(){
-
+    Expr lvalue = e1;
+    Expr rvalue = e2;
+    Symbol ls = e1->checkType();
+    Symbol rs = e2->checkType();
+    if (((ls != Int && ls !=Float) || (rs != Int && rs != Float))&&(ls != Bool || rs != Bool)) {
+        semant_error(this)<<"ltype mismatch rtype"<<endl;
+    }    
+    this->setType(Bool); 
+    return type;
 }
 
 Symbol Neq_class::checkType(){
-
+    Expr lvalue = e1;
+    Expr rvalue = e2;
+    Symbol ls = e1->checkType();
+    Symbol rs = e2->checkType();
+    if (((ls != Int && ls !=Float) || (rs != Int && rs != Float))&&(ls != Bool || rs != Bool)) {
+        semant_error(this)<<"ltype mismatch rtype"<<endl;
+    }    
+    this->setType(Bool); 
+    return type;
 }
 
 Symbol Ge_class::checkType(){
-
+    Expr lvalue = e1;
+    Expr rvalue = e2;
+    Symbol ls = e1->checkType();
+    Symbol rs = e2->checkType();
+    if ((ls != Int && ls !=Float) || (rs != Int && rs != Float)) {
+        semant_error(this)<<"ltype mismatch rtype"<<endl;
+    }    
+    this->setType(Bool); 
+    return type;
 }
 
 Symbol Gt_class::checkType(){
-
+    Expr lvalue = e1;
+    Expr rvalue = e2;
+    Symbol ls = e1->checkType();
+    Symbol rs = e2->checkType();
+    if ((ls != Int && ls !=Float) || (rs != Int && rs != Float)) {
+        semant_error(this)<<"ltype mismatch rtype"<<endl;
+    }    
+    this->setType(Bool); 
+    return type;
 }
 
 Symbol And_class::checkType(){
+    Expr lvalue = e1;
+    Expr rvalue = e2;
+    Symbol ls = lvalue->checkType();
+    Symbol rs = rvalue->checkType();
 
+    if (ls != Bool || rs != Bool) {
+        semant_error(this)<<"Both lvalue and rvalue should be type Bool"<<endl;
+    }
+    this->setType(Bool);
+    return type;
 }
 
 Symbol Or_class::checkType(){
+    Expr lvalue = e1;
+    Expr rvalue = e2;
+    Symbol ls = lvalue->checkType();
+    Symbol rs = rvalue->checkType();
 
+    if (ls != Bool || rs != Bool) {
+        semant_error(this)<<"Both lvalue and rvalue should be type Bool"<<endl;
+    }
+    this->setType(Bool);
+    return type;
 }
 
 Symbol Xor_class::checkType(){
+    Expr lvalue = e1;
+    Expr rvalue = e2;
+    Symbol ls = lvalue->checkType();
+    Symbol rs = rvalue->checkType();
 
+    if (!(ls == Bool && rs == Bool) && !(ls == Int && rs ==Int)) {
+        semant_error(this)<<"Both lvalue and rvalue should be type Bool"<<endl;
+    }
+    this->setType(Bool);
+    return type;
 }
 
 Symbol Not_class::checkType(){
+    Symbol sym = e1->checkType();
+    if (sym != Bool) {
+        semant_error(this)<<"Not class should have Bool type"<<endl;
+    }
 
+    this->setType(sym);
+    return type;
 }
 
 Symbol Bitand_class::checkType(){
+    Symbol ls = e1->checkType();
+    Symbol rs = e2->checkType();
 
+    if (ls != Int || rs != Int) {
+        semant_error(this)<<"Bitand class should have Int type"<<endl;
+    }
+
+    this->setType(Int);
+    return type;
 }
 
 Symbol Bitor_class::checkType(){
+    Symbol ls = e1->checkType();
+    Symbol rs = e2->checkType();
 
+    if (ls != Int || rs != Int) {
+        semant_error(this)<<"Bitor class should have Int type"<<endl;
+    }
+
+    this->setType(Int);
+    return type;
 }
 
 Symbol Bitnot_class::checkType(){
+    Symbol sym = e1->checkType();
 
+    if (sym != Int) {
+        semant_error(this)<<"Bitnot class should have Int type"<<endl;
+    }
+
+    this->setType(Int);
+    return type;
 }
 
 Symbol Const_int_class::checkType(){
@@ -377,7 +592,14 @@ Symbol Const_bool_class::checkType(){
 }
 
 Symbol Object_class::checkType(){
-
+    if (objectEnv.lookup(var) == NULL) {
+        semant_error(this)<<"object "<<var<<" has not been defined."<<endl;
+        this->setType(Void);
+        return type;
+    }
+    Symbol ty = localVars[var];
+    this->setType(ty);
+    return type;
 }
 
 Symbol No_expr_class::checkType(){

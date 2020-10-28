@@ -8,7 +8,6 @@ for filename in *.seal; do
     if [ $? -eq 0 ]; then
         echo "Passed"
     else
-        diff ../my-answer/$filename.out ../test-answer/$filename.out
         echo NOT passed
     fi
 done
