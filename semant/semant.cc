@@ -33,6 +33,7 @@ typedef std::vector<Symbol> MethodClass;
 typedef std::map<Symbol, MethodClass> MethodTable;
 MethodTable methodTable;
 
+// InstallTable marks whether function is installed or not
 typedef std::map<Symbol, bool> InstallTable;
 InstallTable installTable;
 
@@ -236,6 +237,15 @@ void CallDecl_class::check() {
 
         // 2. check stmts
         stmtblock->check(returnType);
+        if (!stmtblock->isReturn()) {
+            semant_error(this)<<"Function "<<name<<" must have an overall return statement."<<endl;
+        }
+        if (stmtblock->isBreak()) {
+            semant_error(this)<<"break must be used in a loop sentence."<<endl;
+        }
+        if (stmtblock->isContinue()) {
+            semant_error(this)<<"continue must be used in a loop sentence."<<endl;
+        }
     }
 
     objectEnv.exitscope();
