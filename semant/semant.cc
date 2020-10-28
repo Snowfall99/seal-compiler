@@ -4,6 +4,7 @@
 #include "semant.h"
 #include "utilities.h"
 #include <map>
+#include <vector>
 
 extern int semant_debug;
 extern char *curr_filename;
@@ -25,6 +26,16 @@ GlobalVariables globalVars;
 // localVars stores local variables' name and type
 typedef std::map<Symbol, Symbol> LocalVariables;
 LocalVariables localVars;
+
+// MethodClass stores para type
+// MethodTable stores name and related paras
+typedef std::vector<Symbol> MethodClass;
+typedef std::map<Symbol, MethodClass> MethodTable;
+MethodTable methodTable;
+
+// InstallTable marks whether function is installed or not
+typedef std::map<Symbol, bool> InstallTable;
+InstallTable installTable;
 
 ///////////////////////////////////////////////
 // helper func
@@ -109,11 +120,15 @@ static void install_calls(Decls decls) {
         Symbol type = decls->nth(i)->getType();
         if (decls->nth(i)->isCallDecl()) {
             if (callTable[name] != NULL) {
-                semant_error(decls->nth(i))<<"Redefined function."<<endl;
+                semant_error(decls->nth(i))<<"Function "<<name<<" was previously defined."<<endl;
             } else if (type != Int && type != Void && type != String && type != Float && type != Bool) {
                 semant_error(decls->nth(i))<<"Function returnType error."<<endl;
+            } else if (!isValidCallName(name)) {
+                semant_error(decls->nth(i))<<"Function printf cannot have a name as printf"<<endl;
             }
             callTable[name] = type;
+            installTable[name] = false;
+            decls->nth(i)->check();
         }
     }
 }
@@ -127,6 +142,8 @@ static void install_globalVars(Decls decls) {
                 semant_error(decls->nth(i))<<"Global variable redefined."<<endl;
             } else if (type == Void) {
                 semant_error(decls->nth(i))<<"var "<<name<<" cannot be of type Void. Void can just be used as return type."<<endl;
+            } else if (name == print) {
+                semant_error(decls->nth(i))<<"Variable printf cannot have a name as printf"<<endl;
             }
             globalVars[name] = type;
         }
@@ -147,8 +164,6 @@ static void check_calls(Decls decls) {
 static void check_main() {
     if (callTable[Main] == NULL) {
         semant_error()<<"main function is not defined."<<endl;
-    } else if (callTable[Main] != Void) {
-        semant_error()<<"main function should have return type Void."<<endl;
     }
 }
 
@@ -169,35 +184,69 @@ void CallDecl_class::check() {
     Symbol returnType = this->getType();
     StmtBlock stmtblock = this->getBody();
     
-    // main function should not have any paras
-    if (funcName == Main && vars->len() != 0) {
-        semant_error(this)<<"Main function should not have paras"<<endl;
-    }
-
     objectEnv.enterscope();
-    for (int j=vars->first(); vars->more(j); j=vars->next(j)) {
-        Symbol name = vars->nth(j)->getName();
-        Symbol type = vars->nth(j)->getType();
-        
-        /* No need to check paras' type because of syntax rules */
+    // install paras
+    if (installTable[name] == false) {
+        // methodclass stores paras type
+        MethodClass mclass;
+        for (int j=vars->first(); vars->more(j); j=vars->next(j)) {
+            Symbol name = vars->nth(j)->getName();
+            Symbol type = vars->nth(j)->getType();
+            
+            /* No need to check paras' type because of syntax rules */
 
-        // check if there are duplicated paras
-        if (objectEnv.lookup(name) != NULL) {
-            semant_error(this)<<"Function "<<funcName<< "'s parameter has a duplicate name "<<name<<endl;
+            // check if there are duplicated paras
+            if (objectEnv.lookup(name) != NULL) {
+                semant_error(this)<<"Function "<<funcName<< "'s parameter has a duplicate name "<<name<<endl;
+            }
+            objectEnv.addid(name, &type);
+            localVars[name] = type;
+            mclass.push_back(type);
         }
-        objectEnv.addid(name, &type);
-        localVars[name] = type;
-    }
 
-    // check stmtBlock
-    // 1. check variableDecls
-    VariableDecls varDecls = stmtblock->getVariableDecls();
-    for (int j=varDecls->first(); varDecls->more(j); j=varDecls->next(j)) {
-        varDecls->nth(j)->check();
-    }
+        // methodTable map paras to funcname
+        methodTable[funcName] = mclass;
+        installTable[name] = true;
+    } else {
+        for (int j=vars->first(); vars->more(j); j=vars->next(j)) {
+            Symbol name = vars->nth(j)->getName();
+            Symbol type = vars->nth(j)->getType();
+            
+            /* No need to check paras' type because of syntax rules */
 
-    // 2. check stmts
-    stmtblock->check(returnType);
+            // check if there are duplicated paras
+            if (objectEnv.lookup(name) != NULL) {
+                semant_error(this)<<"Function "<<funcName<< "'s parameter has a duplicate name "<<name<<endl;
+            }
+            objectEnv.addid(name, &type);
+            localVars[name] = type;
+        }
+        // main function should not have any paras
+        if (funcName == Main && vars->len() != 0) {
+            semant_error(this)<<"Main function should not have paras"<<endl;
+        } else if (callTable[Main] != Void) {
+            semant_error(this)<<"main function should have return type Void."<<endl;
+        }
+
+        // check stmtBlock
+        // 1. check variableDecls
+        VariableDecls varDecls = stmtblock->getVariableDecls();
+        for (int j=varDecls->first(); varDecls->more(j); j=varDecls->next(j)) {
+            varDecls->nth(j)->check();
+        }
+
+        // 2. check stmts
+        stmtblock->check(returnType);
+        if (!stmtblock->isReturn()) {
+            semant_error(this)<<"Function "<<name<<" must have an overall return statement."<<endl;
+        }
+        if (stmtblock->isBreak()) {
+            semant_error(this)<<"break must be used in a loop sentence."<<endl;
+        }
+        if (stmtblock->isContinue()) {
+            semant_error(this)<<"continue must be used in a loop sentence."<<endl;
+        }
+    }
 
     objectEnv.exitscope();
 }
@@ -282,9 +331,38 @@ void BreakStmt_class::check(Symbol type) {
 Symbol Call_class::checkType(){
     Symbol name = this->getName();
     Actuals actuals = this->getActuals();
+    unsigned int j = 0;
     
-    for (int i=actuals->first(); actuals->more(i); i=actuals->next(i)) {
-        actuals->nth(i)->checkType();
+    if (name == print) {
+        if (actuals->len() == 0) {
+            semant_error(this)<<"printf() must has at last one parameter of type String."<<endl;
+            this->setType(Void);
+            return type;
+        }
+        Symbol sym = actuals->nth(actuals->first())->checkType();
+        if (sym != String) {
+            semant_error(this)<<"printf()'s first parameter must be of type String."<<endl;
+            this->setType(Void);
+            return type;
+        }
+        this->setType(Void);
+        return type;
+    }
+
+    if (actuals->len() > 0){
+        if (actuals->len() != int(methodTable[name].size())) {
+            semant_error(this)<<"Wrong number of paras"<<endl;
+        }
+        for (int i=actuals->first(); actuals->more(i) && j<methodTable[name].size(); i=actuals->next(i)) {
+            Expr expr = actuals->nth(i)->copy_Expr();
+            Symbol sym = expr->checkType();
+            // check function call's paras fit funcdecl's paras
+            if (sym != methodTable[name][j]) {
+                semant_error(this)<<"Function "<<name<<", type "<<sym<<" does not conform to declared type "<<methodTable[name][j]<<endl;
+            }
+            j ++;
+            actuals->nth(i)->checkType();
+        }
     }
     
     if (callTable[name] == NULL) {

@@ -25,6 +25,9 @@ public:
    }
    void check(Symbol a) {checkType();}
    void dump_type(ostream&, int);
+   bool isReturn(){return false;}
+   bool isBreak(){return false;}
+   bool isContinue(){return false;}   
 
    virtual void dump_with_types(ostream&,int) = 0; 
 	virtual void dump(ostream&,int) = 0;

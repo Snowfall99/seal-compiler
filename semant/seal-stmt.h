@@ -30,6 +30,9 @@ public:
 	virtual void dump_with_types(ostream&,int) = 0; 
 	virtual void dump(ostream&,int) = 0;
 	virtual void check(Symbol) = 0;
+	virtual bool isReturn() = 0;
+	virtual bool isBreak() = 0;
+	virtual bool isContinue() = 0;
 };
 
 class StmtBlock_class : public Stmt_class {
@@ -49,6 +52,33 @@ public:
 	void check(Symbol);
 	void dump(ostream& , int );
 	void dump_with_types(ostream&,int);
+	bool isReturn() {
+		bool flag = false;
+		for (int i=stmts->first(); stmts->more(i); i=stmts->next(i)) {
+			if (stmts->nth(i)->isReturn() == true) {
+				flag = true;
+			}
+		}
+		return flag;
+	}
+	bool isBreak() {
+		bool flag = false;
+		for (int i=stmts->first(); stmts->more(i); i=stmts->next(i)) {
+			if (stmts->nth(i)->isBreak() == true) {
+				flag = true;
+			}
+		}
+		return flag;
+	}
+	bool isContinue() {
+		bool flag = false;
+		for (int i=stmts->first(); stmts->more(i); i=stmts->next(i)) {
+			if (stmts->nth(i)->isContinue() == true) {
+				flag = true;
+			}
+		}
+		return flag;
+	}
 };
 
 class IfStmt_class : public Stmt_class {
@@ -69,6 +99,9 @@ public:
 	void check(Symbol);
 	void dump(ostream& stream, int n);
 	void dump_with_types(ostream&,int);
+	bool isReturn(){return false;}
+	bool isBreak(){return false;}
+	bool isContinue(){return false;}
 };
 
 
@@ -89,6 +122,9 @@ public:
 	void check(Symbol);
 	void dump(ostream& stream, int n);
 	void dump_with_types(ostream&,int);
+	bool isReturn(){return false;}
+	bool isBreak(){return false;}
+	bool isContinue(){return false;}
 };
 
 class ForStmt_class : public Stmt_class {
@@ -110,6 +146,9 @@ public:
     Stmt copy_Stmt();
 	void dump(ostream& stream, int n);
 	void dump_with_types(ostream&,int);
+	bool isReturn(){return false;}
+	bool isBreak(){return false;}
+	bool isContinue(){return false;}
 };
 
 
@@ -126,6 +165,9 @@ public:
 	void check(Symbol);
     void dump_with_types(ostream&,int);
     void dump(ostream& stream, int n);
+	bool isReturn(){return true;}
+	bool isBreak(){return false;}
+	bool isContinue(){return false;}
 };
 
 class ContinueStmt_class : public Stmt_class {
@@ -135,6 +177,9 @@ public:
 	void check(Symbol);
     void dump_with_types(ostream&,int);
     void dump(ostream& stream, int n);
+	bool isReturn(){return false;}
+	bool isBreak(){return false;}
+	bool isContinue(){return true;}
 };
 
 
@@ -145,6 +190,9 @@ public:
 	void check(Symbol);
     void dump_with_types(ostream&,int);
     void dump(ostream& stream, int n);
+	bool isReturn(){return false;}
+	bool isBreak(){return true;}
+	bool isContinue(){return false;}
 };
 
 typedef class Program_class *Program;
