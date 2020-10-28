@@ -84,7 +84,7 @@ Write-up for PA4
 * [x] 没有重复的函数声明
 * [x] 返回值仅限于`Int` `Void` `String` `Float` 和`Bool`
 * [x] return语句返回的类型和声明的一致
-* [ ] 函数主体部分最外层必须有一个return语句
+* [x] 函数主体部分最外层必须有一个return语句
 * [x] 形参没有重复命名的
 * [x] 全局变量没有重复命名的
 * [x] 变量类型不可以为`Void`
@@ -93,7 +93,7 @@ Write-up for PA4
 * [x] 函数调用输入参数类型和数量要和声明的一致
 * [x] `if`、`while`、`for`条件部分的类型一定是Bool
 * [x] 运算符的操作数必须满足类型约束
-* [ ] `continue`和`break`必须位于循环体内
+* [x] `continue`和`break`必须位于循环体内
 
 
 ## 测试
