@@ -182,6 +182,8 @@ WRONG_IDENTIFIER  [A-Z][a-zA-Z0-9_]*
 <STRING1>\\ { char c = yyinput();
               switch(c) {
                 case 't': cur_string += '\t'; break;
+                case 'b': cur_string += '\b'; break;
+                case 'f': cur_string += '\f'; break;
                 case '0': seal_yylval.error_msg = "String contains null character '\\0'"; flag = true; return ERROR;
                 case 'n': cur_string += '\n'; break;
                 default: cur_string += c;
