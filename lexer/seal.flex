@@ -47,8 +47,8 @@ extern YYSTYPE seal_yylval;
  *  Add Your own definitions here
  */
 int commentLevel = 0;
-bool flag = true;
-int str;
+bool flag = false;
+std::string cur_string;
 
 char* hex2Dec (char* hex) {
   int number;
@@ -58,46 +58,12 @@ char* hex2Dec (char* hex) {
   return res;
 }
 
-char* getstr (const char* str) {
-  char *result;
-  int i = 1, j = 0;
-  int len = strlen(str);
-  result = new char[MAX_STR_CONST];
-
-  while (i < len - 1) {
-    if (i < len-2 && str[i] == '\\') {
-      if (str[i+1] == '\n') {
-        result[j] = '\n';
-        i += 2; 
-      } else if (str[i+1] == '\\') {
-        result[j] = '\\';
-        i += 2;
-      } else if (str[i+1] == '0') {
-        result[j] = '\\';
-        i += 1;
-      } else if (str[i+1] == 't') {
-        result[j] = '\t';
-        i += 2;
-      } else {
-        i++;
-        j--;
-      }
-    } else {
-      result[j] = str[i];
-      i ++;
-    }
-    j ++;
-  }
-  result[j] = '\0';
-  return result;
-}
-
 %}
 
  /*
   * Define names for regular expressions here.
   */
-HEX         0x[A-Fa-f0-9]+
+HEX         0[xX][A-Fa-f0-9]+
 NUMBER      (0|[1-9][0-9]*)
 FLOAT       (0|[1-9][0-9]*).[0-9]+
 TYPE_IDENTIFIER   (Float|Int|Bool|String|Void)
@@ -105,7 +71,7 @@ OBJ_IDENTIFIER    [a-z_][a-zA-Z0-9_]*
 WRONG_IDENTIFIER  [A-Z][a-zA-Z0-9_]*
 
 %Start COMMENT 
-%Start STRING
+%Start STRING1 STRING2
 
 %%
 
@@ -211,73 +177,73 @@ WRONG_IDENTIFIER  [A-Z][a-zA-Z0-9_]*
               }
 <COMMENT>. {}
 
-  /* string */
-<INITIAL>\" { BEGIN STRING; str = 0; yymore(); }
-<INITIAL>` { BEGIN STRING; str = 1; yymore(); }
-<STRING>\\0 { 
-              if (str == 0) {
-                seal_yylval.error_msg = "String contains null character '\\0'"; 
-                flag = false;
-              } else {
-                yymore();
-              } 
+  /* string start with " */
+<INITIAL>\" { BEGIN STRING1; cur_string = ""; flag = false; }
+<STRING1>\\ { char c = yyinput();
+              switch(c) {
+                case 't': cur_string += '\t'; break;
+                case '0': seal_yylval.error_msg = "String contains null character '\\0'"; flag = true; return ERROR;
+                case 'n': cur_string += '\n'; break;
+                default: cur_string += c;
+              }
             }
-<STRING><<EOF>>   {
+<STRING1>\" {
+              if (cur_string.size() > MAX_STR_CONST) {
+                seal_yylval.error_msg = "String is too long";
+                BEGIN INITIAL;
+                return ERROR;
+              }
+              BEGIN INITIAL;
+              if (!flag) {
+                seal_yylval.symbol = stringtable.add_string((char*)cur_string.c_str());
+                flag = false;
+                return CONST_STRING;
+              }
+            }
+<STRING1>.  { cur_string += yytext; }
+<STRING1>\\\n { ++curr_lineno; cur_string += "\n"; }
+<STRING1>\n   { 
+                seal_yylval.error_msg = "newline in quotation must use a '\\'";
+                BEGIN INITIAL;
+                ++curr_lineno;
+                return ERROR;
+              }
+<STRING1><<EOF>>  {
                     seal_yylval.error_msg = "EOF in string constant";
                     BEGIN INITIAL;
                     yyrestart(yyin);
                     return ERROR;
                   }
-<STRING>[ ] { yymore(); }
-<STRING>[^\\\"\`\n]* { yymore(); }
-<STRING>\\[^\n] { yymore(); }
-<STRING>\\\n { curr_lineno++; yymore(); }
-<STRING>\n {
-  if (str == 0) {
-    seal_yylval.error_msg = "newline in quotation must use a '\\'";
-    curr_lineno += 1;
-    BEGIN INITIAL;
-    return ERROR;
-  } else {
-    curr_lineno += 1;
-    yymore();
-  }
-}
-<STRING>\"  {
-              if (flag == false) {
-                flag = true;
+
+  /* String start with ` */
+<INITIAL>`  {
+              cur_string = "";
+              BEGIN STRING2;
+            } 
+<STRING2>\n {
+              ++curr_lineno;
+              cur_string += "\n";
+            }
+<STRING2>`  {
+              if (cur_string.size() > MAX_STR_CONST) {
+                seal_yylval.error_msg = "String is too long";
                 BEGIN INITIAL;
                 return ERROR;
-              } else {
-                if (yyleng >= MAX_STR_CONST) {
-                  seal_yylval.error_msg = "String constant too long";
-                  BEGIN INITIAL;
-                  return ERROR;
-                } else {
-                  char* result = getstr(yytext);
-                  seal_yylval.symbol = stringtable.add_string(result);
-                  BEGIN INITIAL;
-                  return CONST_STRING;
-                }
-              }                 
+              }
+              BEGIN INITIAL;
+              if (!flag) {
+                seal_yylval.symbol = stringtable.add_string((char*)cur_string.c_str());
+                flag = false;
+                return CONST_STRING;
+              }
             }
-<STRING>`  {
-              if (flag == false) {
-                flag = true;
-                BEGIN INITIAL;
-              } else {
-                if (yyleng >= MAX_STR_CONST) {
-                  seal_yylval.error_msg = "String is too long.";
-                  BEGIN INITIAL;
-                  return ERROR;
-                } else {
-                  char* result = getstr(yytext);
-                  seal_yylval.symbol = stringtable.add_string(result);
-                  BEGIN INITIAL;
-                  return CONST_STRING;
-                }
-              }                 
-            }
+<STRING2>.  { cur_string += yytext; }
+<STRING2><<EOF>>  {
+                    seal_yylval.error_msg = "EOF in string constant";
+                    BEGIN INITIAL;
+                    yyrestart(yyin);
+                    return ERROR;
+                  }
 
   /* space */
 [ \t] {}
