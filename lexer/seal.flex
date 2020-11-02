@@ -67,10 +67,10 @@ HEX         0[xX][A-Fa-f0-9]+
 NUMBER      (0|[1-9][0-9]*)
 FLOAT       (0|[1-9][0-9]*).[0-9]+
 TYPE_IDENTIFIER   (Float|Int|Bool|String|Void)
-OBJ_IDENTIFIER    [a-z_][a-zA-Z0-9_]*
+OBJ_IDENTIFIER    [a-z][a-zA-Z0-9_]*
 WRONG_IDENTIFIER  [A-Z][a-zA-Z0-9_]*
 
-%Start COMMENT 
+%Start COMMENT1 COMMENT2 
 %Start STRING1 STRING2
 
 %%
@@ -103,6 +103,8 @@ WRONG_IDENTIFIER  [A-Z][a-zA-Z0-9_]*
 <INITIAL>"<"        { return ('<'); }
 <INITIAL>">"        { return ('>'); }
 <INITIAL>"|"        { return ('|'); }
+<INITIAL>"&"        { return ('&'); }
+<INITIAL>"^"        { return ('^'); }
 <INITIAL>"%"        { return ('%'); }
 <INITIAL>"="        { return ('='); }
 <INITIAL>"."        { return ('.'); }
@@ -158,24 +160,27 @@ WRONG_IDENTIFIER  [A-Z][a-zA-Z0-9_]*
                               return ERROR;
                             }
   /* comment */
+<INITIAL>"//" { BEGIN COMMENT1; }
+<COMMENT1>.   {}
+<COMMENT1>\n  { curr_lineno++; BEGIN INITIAL; }
 <INITIAL>"/*" { 
                 commentLevel += 1;
-                BEGIN COMMENT;
+                BEGIN COMMENT2;
               }
 <INITIAL>"*/" { seal_yylval.error_msg = "Unmatched */"; return ERROR; }
-<COMMENT>"/*" {
+<COMMENT2>"/*" {
                 commentLevel += 1;
               }
-<COMMENT><<EOF>>  {
+<COMMENT2><<EOF>>  {
                     seal_yylval.error_msg = "EOF in comment constant";
                     BEGIN INITIAL;
                     return ERROR;
                   }
-<COMMENT>"*/" { 
+<COMMENT2>"*/" { 
                 if (--commentLevel == 0)
                   BEGIN INITIAL; 
               }
-<COMMENT>. {}
+<COMMENT2>. {}
 
   /* string start with " */
 <INITIAL>\" { BEGIN STRING1; cur_string = ""; flag = false; }
