@@ -430,13 +430,30 @@ static void emit_global_bool(Symbol name, ostream& s) {
   BOOLTAG << 0 << endl;
 }
 
-void code_global_data(Decls decls, ostream &str)
-{
-
+void code_global_data(Decls decls, ostream &str) {
+  str<<DATA<<endl;
+  for (int i=decls->first(); decls->more(i); i=decls->next(i)) {
+    if (!decls->nth(i)->isCallDecl()) {
+      Symbol name = decls->nth(i)->getName();
+      Symbol type = decls->nth(i)->getType();
+      if (type == Int) {
+        emit_global_int(name, str);
+      } else if (type == Bool) {
+        emit_global_bool(name, str);
+      } else if (type == Float) {
+        emit_global_float(name, str);
+      }
+    }
+  }
 }
 
 void code_calls(Decls decls, ostream &str) {
-
+  str<<TEXT<<endl;
+  for (int i=decls->first(); decls->more(i); i=decls->next(i)) {
+    if (decls->nth(i)->isCallDecl()) {
+      decls->nth(i)->code(str);
+    }
+  }
 }
 
 //***************************************************
@@ -482,7 +499,16 @@ void code(Decls decls, ostream& s)
 //*****************************************************************
 
 void CallDecl_class::code(ostream &s) {
+  Symbol name = this->getName();
+  Symbol type = this->getType();
+  StmtBlock stmtblock = this->getBody();
+  
+  s<<GLOBAL<<name<<endl<<
+  SYMBOL_TYPE<<name<<COMMA<<FUNCTION<<endl;
 
+  s<<name<<":"<<endl;  
+
+  stmtblock->code(s);
 }
 
 void StmtBlock_class::code(ostream &s){

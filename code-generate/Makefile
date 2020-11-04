@@ -12,7 +12,7 @@ CPPINCLUDE= -I.
 
 
 CC=g++
-CFLAGS=-g -Wall -Wno-unused -Wno-write-strings -Wno-deprecated ${CPPINCLUDE} -DDEBUG -std=c++11
+CFLAGS=-g -Wall -Wno-unused -Wno-write-strings -Wno-deprecated ${CPPINCLUDE} -DDEBUG -std=c++11 -fPIC -no-pie
 
 DEPEND = ${CC} -MM ${CPPINCLUDE}
 
