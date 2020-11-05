@@ -430,13 +430,32 @@ static void emit_global_bool(Symbol name, ostream& s) {
   BOOLTAG << 0 << endl;
 }
 
-void code_global_data(Decls decls, ostream &str)
-{
-
+void code_global_data(Decls decls, ostream &str) {
+  str<<DATA<<endl;
+  for (int i=decls->first(); decls->more(i); i=decls->next(i)) {
+    if (!decls->nth(i)->isCallDecl()) {
+      Symbol name = decls->nth(i)->getName();
+      Symbol type = decls->nth(i)->getType();
+      if (type == Int) {
+        emit_global_int(name, str);
+      } else if (type == Bool) {
+        emit_global_bool(name, str);
+      } else if (type == Float) {
+        emit_global_float(name, str);
+      }
+    }
+  }
 }
 
 void code_calls(Decls decls, ostream &str) {
-
+  str<<SECTION<<RODATA<<endl;
+  stringtable.code_string_table(str);
+  str<<TEXT<<endl;
+  for (int i=decls->first(); decls->more(i); i=decls->next(i)) {
+    if (decls->nth(i)->isCallDecl()) {
+      decls->nth(i)->code(str);
+    }
+  }
 }
 
 //***************************************************
@@ -482,15 +501,79 @@ void code(Decls decls, ostream& s)
 //*****************************************************************
 
 void CallDecl_class::code(ostream &s) {
+  Symbol name = this->getName();
+  Symbol type = this->getType();
+  Variables vars = this->getVariables();
+  StmtBlock stmtblock = this->getBody();
+  
+  s<<GLOBAL<<name<<endl<<
+  SYMBOL_TYPE<<name<<COMMA<<FUNCTION<<endl;
 
+  s<<name<<":"<<endl;
+  emit_push(RBP, s);
+  emit_mov(RSP, RBP, s);
+  emit_push(RBX, s);
+  emit_push(R10, s);
+  emit_push(R11, s);
+  emit_push(R12, s);
+  emit_push(R13, s);
+  emit_push(R14, s);
+  emit_push(R15, s);  
+
+  int num = 1;
+  for (int i=vars->first(); vars->more(i); i=vars->next(i)) {
+    switch (num) {
+      case 1:
+        emit_sub("$8", RBP, s);
+        emit_mov(RDI, RBP, s);
+        num ++;
+        break;
+      case 2:
+        emit_sub("$8", RBP, s);
+        emit_mov(RSI, RBP, s);
+        num ++;
+        break;
+      case 3:
+        emit_sub("$8", RBP, s);
+        emit_mov(RDX, RBP, s);
+        num ++;
+        break;
+      case 4:
+        emit_sub("$8", RBP, s);
+        emit_mov(RCX, RBP, s);
+        num ++;
+        break;
+      case 5:
+        emit_sub("$8", RBP, s);
+        emit_mov(R8, RBP, s);
+        num ++;
+        break;
+      case 6:
+        emit_sub("$8", RBP, s);
+        emit_mov(R9, RBP, s);
+        num ++;
+        break;
+    }
+  }
+
+  stmtblock->code(s);
+  s<<SIZE<<name<<", "<<".-"<<name<<endl;
 }
 
 void StmtBlock_class::code(ostream &s){
- 
+  VariableDecls vars = this->getVariableDecls();
+  int num = 0;
+  for (int i=vars->first(); vars->more(i); i=vars->next(i)) {
+    emit_sub("$8", RSP, s);
+  }
+  Stmts stmts = this->getStmts();
+  for (int i=0; stmts->more(i); i=stmts->next(i)) {
+    stmts->nth(i)->code(s);
+  }
 }
 
 void IfStmt_class::code(ostream &s) {
- 
+  
 }
 
 void WhileStmt_class::code(ostream &s) {
@@ -502,7 +585,16 @@ void ForStmt_class::code(ostream &s) {
 }
 
 void ReturnStmt_class::code(ostream &s) {
-  
+    emit_pop(R15, s);
+    emit_pop(R14, s);
+    emit_pop(R13, s);
+    emit_pop(R12, s);
+    emit_pop(R11, s);
+    emit_pop(R10, s);
+    emit_pop(RBX, s);
+
+    s<<LEAVE<<endl
+    <<RET<<endl;
 }
 
 void ContinueStmt_class::code(ostream &s) {
@@ -535,7 +627,10 @@ void Actual_class::code(ostream &s) {
 }
 
 void Assign_class::code(ostream &s) {
- 
+  Symbol lv = lvalue;
+  Expr rv = value;
+  rv->code(s);
+
 }
 
 void Add_class::code(ostream &s) {

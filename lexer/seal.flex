@@ -68,7 +68,7 @@ NUMBER      (0|[1-9][0-9]*)
 FLOAT       (0|[1-9][0-9]*).[0-9]+
 TYPE_IDENTIFIER   (Float|Int|Bool|String|Void)
 OBJ_IDENTIFIER    [a-z][a-zA-Z0-9_]*
-WRONG_IDENTIFIER  [A-Z][a-zA-Z0-9_]*
+WRONG_IDENTIFIER  [A-Z_][a-zA-Z0-9_]*
 
 %Start COMMENT1 COMMENT2 
 %Start STRING1 STRING2
@@ -107,7 +107,6 @@ WRONG_IDENTIFIER  [A-Z][a-zA-Z0-9_]*
 <INITIAL>"^"        { return ('^'); }
 <INITIAL>"%"        { return ('%'); }
 <INITIAL>"="        { return ('='); }
-<INITIAL>"."        { return ('.'); }
 <INITIAL>";"        { return (';'); }
 <INITIAL>"~"        { return ('~'); }
 <INITIAL>"!"        { return ('!'); }

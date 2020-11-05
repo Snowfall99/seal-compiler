@@ -241,10 +241,20 @@ void CallDecl_class::check() {
             semant_error(this)<<"Function "<<name<<" must have an overall return statement."<<endl;
         }
         if (stmtblock->isBreak()) {
-            semant_error(this)<<"break must be used in a loop sentence."<<endl;
+            Stmts stmts = stmtblock->getStmts();
+            for (int i=stmts->first(); stmts->more(i); i=stmts->next(i)) {
+                if (stmts->nth(i)->isBreak()) {
+                    semant_error(stmts->nth(i))<<"break must be used in a loop sentence"<<endl;
+                }
+            }
         }
         if (stmtblock->isContinue()) {
-            semant_error(this)<<"continue must be used in a loop sentence."<<endl;
+            Stmts stmts = stmtblock->getStmts();
+            for (int i=stmts->first(); stmts->more(i); i=stmts->next(i)) {
+                if (stmts->nth(i)->isContinue()) {
+                    semant_error(stmts->nth(i))<<"continue must be used in a loop sentence."<<endl;
+                }
+            }
         }
     }
 
