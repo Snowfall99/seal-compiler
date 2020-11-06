@@ -8,6 +8,7 @@
 
 #include "cgen.h"
 #include "cgen_gc.h"
+#include <vector>
 
 using namespace std;
 
@@ -27,7 +28,12 @@ void code(Decls decls, ostream& s);
 //  
 //
 //////////////////////////////////////////////////////////////////
+typedef std::map<Symbol, int> VariableTable;
+typedef std::map<Symbol, VariableTable> FunctionTable;
+FunctionTable functab;
 
+typedef std::map<Symbol, Symbol> GlobalTable;
+GlobalTable globalTab;
 // you can add any helper functions here
 
 
@@ -431,11 +437,14 @@ static void emit_global_bool(Symbol name, ostream& s) {
 }
 
 void code_global_data(Decls decls, ostream &str) {
-  str<<DATA<<endl;
+  int count = 0;
   for (int i=decls->first(); decls->more(i); i=decls->next(i)) {
     if (!decls->nth(i)->isCallDecl()) {
+      count ++;
+      if (count == 1) str<<DATA<<endl;
       Symbol name = decls->nth(i)->getName();
       Symbol type = decls->nth(i)->getType();
+      globalTab[name] = type;
       if (type == Int) {
         emit_global_int(name, str);
       } else if (type == Bool) {
@@ -506,6 +515,8 @@ void CallDecl_class::code(ostream &s) {
   Variables vars = this->getVariables();
   StmtBlock stmtblock = this->getBody();
   
+  VariableTable vartab;
+
   s<<GLOBAL<<name<<endl<<
   SYMBOL_TYPE<<name<<COMMA<<FUNCTION<<endl;
 
@@ -520,52 +531,65 @@ void CallDecl_class::code(ostream &s) {
   emit_push(R14, s);
   emit_push(R15, s);  
 
+  int order = 1;
   int num = 1;
   for (int i=vars->first(); vars->more(i); i=vars->next(i)) {
-    switch (num) {
+    Symbol name = vars->nth(i)->getName();
+    Symbol type = vars->nth(i)->getType();
+    vartab[name] = num;
+    num ++;
+
+    switch (order) {
       case 1:
         emit_sub("$8", RBP, s);
         emit_mov(RDI, RBP, s);
-        num ++;
+        order ++;
         break;
       case 2:
         emit_sub("$8", RBP, s);
         emit_mov(RSI, RBP, s);
-        num ++;
+        order ++;
         break;
       case 3:
         emit_sub("$8", RBP, s);
         emit_mov(RDX, RBP, s);
-        num ++;
+        order ++;
         break;
       case 4:
         emit_sub("$8", RBP, s);
         emit_mov(RCX, RBP, s);
-        num ++;
+        order ++;
         break;
       case 5:
         emit_sub("$8", RBP, s);
         emit_mov(R8, RBP, s);
-        num ++;
+        order ++;
         break;
       case 6:
         emit_sub("$8", RBP, s);
         emit_mov(R9, RBP, s);
-        num ++;
+        order ++;
         break;
     }
   }
 
+  // variableDecls
+  VariableDecls varDecls = stmtblock->getVariableDecls();
+  for (int i=varDecls->first(); varDecls->more(i); i=varDecls->next(i)) {
+    Symbol name = varDecls->nth(i)->getName();
+    Symbol type = varDecls->nth(i)->getType();
+    vartab[name] = num;
+    num ++;
+    emit_sub("$8", RSP, s);
+  }
+
+  functab[name] = vartab;
+  
   stmtblock->code(s);
   s<<SIZE<<name<<", "<<".-"<<name<<endl;
 }
 
 void StmtBlock_class::code(ostream &s){
-  VariableDecls vars = this->getVariableDecls();
-  int num = 0;
-  for (int i=vars->first(); vars->more(i); i=vars->next(i)) {
-    emit_sub("$8", RSP, s);
-  }
   Stmts stmts = this->getStmts();
   for (int i=0; stmts->more(i); i=stmts->next(i)) {
     stmts->nth(i)->code(s);
@@ -628,93 +652,221 @@ void Actual_class::code(ostream &s) {
 
 void Assign_class::code(ostream &s) {
   Symbol lv = lvalue;
+
+  // global or local
+  bool flag = false;
+  if (globalTab[lv] != NULL) flag = true;
+  
   Expr rv = value;
   rv->code(s);
+  
+  emit_mov(RBP, RAX, s);
 
+  if (flag == false) {
+    emit_mov(RAX, RBP, s);
+  } else {
+    emit_mov(RAX, RIP, s);
+  }
+  
 }
 
 void Add_class::code(ostream &s) {
-  
+  emit_sub("$8", RSP, s);
+  emit_mov(RBP, RBX, s);
+  emit_mov(RBP, R10, s);
+  emit_add(RBX, R10, s);
+  emit_mov(R10, RBP, s);
 }
 
 void Minus_class::code(ostream &s) {
- 
+  emit_sub("$8", RSP, s);
+  emit_mov(RBP, RBX, s);
+  emit_mov(RBP, R10, s);
+  emit_sub(RBX, R10, s);
+  emit_mov(R10, RBP, s);
 }
 
 void Multi_class::code(ostream &s) {
- 
+  emit_sub("$8", RSP, s);  
+  emit_mov(RBP, RBX, s);
+  emit_mov(RBP, R10, s);
+  emit_mul(RBX, R10, s);
+  emit_mov(R10, RBP, s);
 }
 
 void Divide_class::code(ostream &s) {
- 
+  emit_sub("$8", RSP, s);
+  emit_mov(RBP, RAX, s);
+  emit_cqto(s);
+  emit_mov(RBP, RBX, s);
+  emit_div(RBX, s);
+  emit_mov(RAX, RBP, s);
 }
 
 void Mod_class::code(ostream &s) {
- 
+  emit_sub("$8", RSP, s);  
+  emit_mov(RBP, RAX, s);
+  emit_cqto(s);
+  emit_mov(RBP, RBX, s);
+  emit_div(RBX, s);
+  emit_mov(RDX, RBP, s);
 }
 
 void Neg_class::code(ostream &s) {
- 
+  emit_sub("$8", RSP, s);
+  emit_mov(RBP, RAX, s);
+  emit_neg(RAX, s);
+  emit_mov(RAX, RBP, s);
 }
 
 void Lt_class::code(ostream &s) {
-  
+  emit_sub("$8", RSP, s);
+  emit_mov(RBP, RAX, s);
+  emit_mov(RBP, RDX, s);
+  emit_cmp(RDX, RAX, s);
+  emit_jl("POS", s);
+  emit_mov("$0", RAX, s);
+  emit_jmp("POS", s);
+  emit_position("POS", s);
+  emit_mov("$1", RAX, s);
+  emit_position("POS", s);
+  emit_mov(RAX, RBP, s);
 }
 
 void Le_class::code(ostream &s) {
- 
+  emit_sub("$8", RSP, s);
+  emit_mov(RBP, RAX, s);
+  emit_mov(RBP, RDX, s);
+  emit_cmp(RDX, RAX, s);
+  emit_jle("POS", s);
+  emit_mov("$0", RAX, s);
+  emit_jmp("POS", s);
+  emit_position("POS", s);
+  emit_mov("$1", RAX, s);
+  emit_position("POS", s);
+  emit_mov(RAX, RBP, s);
 }
 
 void Equ_class::code(ostream &s) {
- 
+  emit_sub("$8", RSP, s);
+  emit_mov(RBP, RAX, s);
+  emit_mov(RBP, RDX, s);
+  emit_cmp(RDX, RAX, s);
+  emit_je("POS", s);
+  emit_mov("$0", RAX, s);
+  emit_jmp("POS", s);
+  emit_position("POS", s);
+  emit_mov("$1", RAX, s);
+  emit_position("POS", s);
+  emit_mov(RAX, RBP, s);
 }
 
 void Neq_class::code(ostream &s) {
- 
+  emit_sub("$8", RSP, s);
+  emit_mov(RBP, RAX, s);
+  emit_mov(RBP, RDX, s);
+  emit_cmp(RDX, RAX, s);
+  emit_jne("POS", s);
+  emit_mov("$0", RAX, s);
+  emit_jmp("POS", s);
+  emit_position("POS", s);
+  emit_mov("$1", RAX, s);
+  emit_position("POS", s);
+  emit_mov(RAX, RBP, s);
 }
 
 void Ge_class::code(ostream &s) {
- 
+  emit_sub("$8", RSP, s);
+  emit_mov(RBP, RAX, s);
+  emit_mov(RBP, RDX, s);
+  emit_cmp(RDX, RAX, s);
+  emit_jge("POS", s);
+  emit_mov("$0", RAX, s);
+  emit_jmp("POS", s);
+  emit_position("POS", s);
+  emit_mov("$1", RAX, s);
+  emit_position("POS", s);
+  emit_mov(RAX, RBP, s);
 }
 
 void Gt_class::code(ostream &s) {
- 
+  emit_sub("$8", RSP, s);
+  emit_mov(RBP, RAX, s);
+  emit_mov(RBP, RDX, s);
+  emit_cmp(RDX, RAX, s);
+  emit_jg("POS", s);
+  emit_mov("$0", RAX, s);
+  emit_jmp("POS", s);
+  emit_position("POS", s);
+  emit_mov("$1", RAX, s);
+  emit_position("POS", s);
+  emit_mov(RAX, RBP, s);
 }
 
 void And_class::code(ostream &s) {
- 
+  emit_sub("$8", RSP, s);
+  emit_mov(RBP, RAX, s);
+  emit_mov(RBP, RDX, s);
+  emit_and(RAX, RDX, s);
+  emit_mov(RDX, RBP, s);
 }
 
 void Or_class::code(ostream &s) {
- 
+  emit_sub("$8", RSP, s);
+  emit_mov(RBP, RAX, s);
+  emit_mov(RBP, RDX, s);
+  emit_or(RAX, RDX, s);
+  emit_mov(RDX, RBP, s);
 }
 
 void Xor_class::code(ostream &s) {
- 
+  emit_sub("$8", RSP, s);
+  emit_mov(RBP, RAX, s);
+  emit_mov(RBP, RDX, s);
+  emit_xor(RAX, RDX, s);
+  emit_mov(RDX, RBP, s);
 }
 
 void Not_class::code(ostream &s) {
- 
+  emit_sub("$8", RSP, s);
+  emit_mov(RBP, RAX, s);
+  emit_mov("$0x0000000000000001", RDX, s);
+  emit_xor(RDX, RAX, s);
+  emit_mov(RAX, RBP, s);
 }
 
 void Bitnot_class::code(ostream &s) {
-
+  emit_sub("$8", RSP, s);
+  emit_mov(RBP, RAX, s);
+  emit_not(RAX, s);
+  emit_mov(RAX, RBP, s);
 }
 
 void Bitand_class::code(ostream &s) {
-
+  emit_sub("$8", RSP, s);
+  emit_mov(RBP, RAX, s);
+  emit_mov(RBP, RDX, s);
+  emit_and(RAX, RDX, s);
+  emit_mov(RDX, RBP, s);
 }
 
 void Bitor_class::code(ostream &s) {
- 
+  emit_sub("$8", RSP, s);
+  emit_mov(RBP, RAX, s);
+  emit_mov(RBP, RDX, s);
+  emit_or(RAX, RDX, s);
+  emit_mov(RDX, RBP, s);
 }
 
 void Const_int_class::code(ostream &s) {
- 
+  s << MOV << "$" << value << COMMA << RAX << endl
+    << MOV << RAX << COMMA << RBP << endl;
 }
 
 void Const_string_class::code(ostream &s) {
- 
+  emit_sub("$8", RSP, s);
+  emit_mov("LC", RAX, s);
+  emit_mov(RAX, RBP, s);
 }
 
 void Const_float_class::code(ostream &s) {
@@ -722,7 +874,15 @@ void Const_float_class::code(ostream &s) {
 }
 
 void Const_bool_class::code(ostream &s) {
- 
+  emit_sub("$8", RSP, s);
+
+  if (value == 1) {
+    emit_mov("$1", RAX, s);
+  } else {
+    emit_mov("$0", RAX, s);
+  }
+
+  emit_mov(RAX, RBP, s);
 }
 
 void Object_class::code(ostream &s) {
