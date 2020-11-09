@@ -597,28 +597,53 @@ void StmtBlock_class::code(ostream &s){
 }
 
 void IfStmt_class::code(ostream &s) {
-  
+  condition->code(s);
+  emit_mov(RBP, RAX, s);
+  emit_test(RAX, RAX, s);
+  emit_jz("POSIF2", s);
+  thenexpr->code(s);
+  emit_jmp("POS ifEND", s);
+  s<<"POSIF2"<<":"<<endl;
+  elseexpr->code(s);
+  s<<"POS ifEND"<<endl;
 }
 
 void WhileStmt_class::code(ostream &s) {
- 
+  s<<"POS condition"<<endl;
+  condition->code(s);
+  emit_mov(RBP, RAX, s);
+  emit_test(RAX, RAX, s);
+  emit_jz("POS whileEND", s);
+  body->code(s);
+  emit_jmp("POS condition", s);
+  s<<"POS whileEND"<<endl;
 }
 
 void ForStmt_class::code(ostream &s) {
- 
+  initexpr->code(s);
+  s<<"POS condition:"<<endl;
+  condition->code(s);
+  emit_mov(RBP, RAX, s);
+  emit_test(RAX, RAX, s);
+  emit_jz("POS ForEND", s);
+  body->code(s);
+  s<<"POS loopact:"<<endl;
+  loopact->code(s);
+  emit_jmp("POS condition", s);
+  s<<"POS forEND"<<endl;
 }
 
 void ReturnStmt_class::code(ostream &s) {
-    emit_pop(R15, s);
-    emit_pop(R14, s);
-    emit_pop(R13, s);
-    emit_pop(R12, s);
-    emit_pop(R11, s);
-    emit_pop(R10, s);
-    emit_pop(RBX, s);
+  emit_pop(R15, s);
+  emit_pop(R14, s);
+  emit_pop(R13, s);
+  emit_pop(R12, s);
+  emit_pop(R11, s);
+  emit_pop(R10, s);
+  emit_pop(RBX, s);
 
-    s<<LEAVE<<endl
-    <<RET<<endl;
+  s<<LEAVE<<endl
+  <<RET<<endl;
 }
 
 void ContinueStmt_class::code(ostream &s) {
@@ -652,6 +677,7 @@ void Actual_class::code(ostream &s) {
 
 void Assign_class::code(ostream &s) {
   Symbol lv = lvalue;
+  emit_sub("$8", RSP, s);
 
   // global or local
   bool flag = false;
@@ -671,6 +697,8 @@ void Assign_class::code(ostream &s) {
 }
 
 void Add_class::code(ostream &s) {
+  e1->code(s);
+  e2->code(s);
   emit_sub("$8", RSP, s);
   emit_mov(RBP, RBX, s);
   emit_mov(RBP, R10, s);
@@ -679,6 +707,8 @@ void Add_class::code(ostream &s) {
 }
 
 void Minus_class::code(ostream &s) {
+  e1->code(s);
+  e2->code(s);
   emit_sub("$8", RSP, s);
   emit_mov(RBP, RBX, s);
   emit_mov(RBP, R10, s);
@@ -687,6 +717,8 @@ void Minus_class::code(ostream &s) {
 }
 
 void Multi_class::code(ostream &s) {
+  e1->code(s);
+  e2->code(s);
   emit_sub("$8", RSP, s);  
   emit_mov(RBP, RBX, s);
   emit_mov(RBP, R10, s);
@@ -695,6 +727,8 @@ void Multi_class::code(ostream &s) {
 }
 
 void Divide_class::code(ostream &s) {
+  e1->code(s);
+  e2->code(s);
   emit_sub("$8", RSP, s);
   emit_mov(RBP, RAX, s);
   emit_cqto(s);
@@ -704,6 +738,8 @@ void Divide_class::code(ostream &s) {
 }
 
 void Mod_class::code(ostream &s) {
+  e1->code(s);
+  e2->code(s);
   emit_sub("$8", RSP, s);  
   emit_mov(RBP, RAX, s);
   emit_cqto(s);
@@ -713,6 +749,7 @@ void Mod_class::code(ostream &s) {
 }
 
 void Neg_class::code(ostream &s) {
+  e1->code(s);
   emit_sub("$8", RSP, s);
   emit_mov(RBP, RAX, s);
   emit_neg(RAX, s);
@@ -724,12 +761,12 @@ void Lt_class::code(ostream &s) {
   emit_mov(RBP, RAX, s);
   emit_mov(RBP, RDX, s);
   emit_cmp(RDX, RAX, s);
-  emit_jl("POS", s);
+  emit_jl("POSLT0", s);
   emit_mov("$0", RAX, s);
-  emit_jmp("POS", s);
-  emit_position("POS", s);
+  emit_jmp("POSLT1", s);
+  emit_position("POSLT0", s);
   emit_mov("$1", RAX, s);
-  emit_position("POS", s);
+  emit_position("POSLT1", s);
   emit_mov(RAX, RBP, s);
 }
 
