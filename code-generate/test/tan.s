@@ -24,19 +24,19 @@ tan:
 	subq	$8, %rsp
 	movq	%xmm3, -88(%rbp)
 	subq	$8, %rsp
-	movq	-64(%rbp), %xmm1
-	movq	-80(%rbp), %xmm0
+	movsd	-64(%rbp), %xmm0
+	movsd	-80(%rbp), %xmm1
 	ucomisd	%xmm0, %xmm1
-	je	 .POS2
+	je	 .POS0
 	movq	$0, %rax
-	jmp	 .POS3
-.POS2:
+	jmp	 .POS1
+.POS0:
 	movq	$1, %rax
-.POS3:
+.POS1:
 	movq	%rax, -96(%rbp)
 	movq	-96(%rbp), %rax
 	testq	%rax, %rax
-	jz	 .POS0
+	jz	 .POS2
 	subq	$8, %rsp
 	movq	$0x0, %rax
 	movq	%rax, -104(%rbp)
@@ -50,9 +50,9 @@ tan:
 	popq	 %rbx
 	leave	
 	ret	
-	jmp	 .POS1
-.POS0:
-.POS1:
+	jmp	 .POS3
+.POS2:
+.POS3:
 	subq	$8, %rsp
 	movsd	-88(%rbp), %xmm4
 	movsd	-72(%rbp), %xmm5

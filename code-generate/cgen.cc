@@ -8,6 +8,7 @@
 
 #include "cgen.h"
 #include "cgen_gc.h"
+#include <vector>
 
 using namespace std;
 
@@ -27,9 +28,26 @@ void code(Decls decls, ostream& s);
 //  
 //
 //////////////////////////////////////////////////////////////////
+// variable name - memory
+typedef SymbolTable<Symbol, int> variableTable;
+variableTable variabletab;
+// function - offset
+typedef std::map<Symbol, int> functionTable;
 
+int offset = 0;
+int tempaddress = 0;
+int labelNum = 0;
+int continuePos = 0;
+int breakPos = 0;
 // you can add any helper functions here
-
+static void emit_mrmovsd(const char *base_reg,int offset, const char *dest, ostream& s)
+{
+  s << MOVSD << offset << "(" << base_reg << ")" << COMMA << dest << endl;
+}
+static void emit_rmmovsd(const char *base_reg,int offset, const char *dest, ostream& s)
+{
+  s << MOVSD << base_reg << COMMA << offset << "(" << dest<< ")" << endl;
+}
 
 //////////////////////////////////////////////////////////////////////
 //
@@ -431,9 +449,11 @@ static void emit_global_bool(Symbol name, ostream& s) {
 }
 
 void code_global_data(Decls decls, ostream &str) {
-  str<<DATA<<endl;
+  int count = 0;
   for (int i=decls->first(); decls->more(i); i=decls->next(i)) {
     if (!decls->nth(i)->isCallDecl()) {
+      count ++;
+      if (count == 1) str<<DATA<<endl;
       Symbol name = decls->nth(i)->getName();
       Symbol type = decls->nth(i)->getType();
       if (type == Int) {
@@ -453,6 +473,11 @@ void code_calls(Decls decls, ostream &str) {
   str<<TEXT<<endl;
   for (int i=decls->first(); decls->more(i); i=decls->next(i)) {
     if (decls->nth(i)->isCallDecl()) {
+      if (decls->nth(i)->getName() == Main) {
+        offset = tempaddress = 0;
+      } else {
+        offset = tempaddress = -56;
+      }
       decls->nth(i)->code(str);
     }
   }
@@ -501,11 +526,8 @@ void code(Decls decls, ostream& s)
 //*****************************************************************
 
 void CallDecl_class::code(ostream &s) {
-  Symbol name = this->getName();
-  Symbol type = this->getType();
-  Variables vars = this->getVariables();
-  StmtBlock stmtblock = this->getBody();
-  
+  variabletab.enterscope();
+
   s<<GLOBAL<<name<<endl<<
   SYMBOL_TYPE<<name<<COMMA<<FUNCTION<<endl;
 
@@ -520,92 +542,173 @@ void CallDecl_class::code(ostream &s) {
   emit_push(R14, s);
   emit_push(R15, s);  
 
-  int num = 1;
-  for (int i=vars->first(); vars->more(i); i=vars->next(i)) {
-    switch (num) {
-      case 1:
-        emit_sub("$8", RBP, s);
-        emit_mov(RDI, RBP, s);
-        num ++;
-        break;
-      case 2:
-        emit_sub("$8", RBP, s);
-        emit_mov(RSI, RBP, s);
-        num ++;
-        break;
-      case 3:
-        emit_sub("$8", RBP, s);
-        emit_mov(RDX, RBP, s);
-        num ++;
-        break;
-      case 4:
-        emit_sub("$8", RBP, s);
-        emit_mov(RCX, RBP, s);
-        num ++;
-        break;
-      case 5:
-        emit_sub("$8", RBP, s);
-        emit_mov(R8, RBP, s);
-        num ++;
-        break;
-      case 6:
-        emit_sub("$8", RBP, s);
-        emit_mov(R9, RBP, s);
-        num ++;
-        break;
+  // paras
+  int int_num = 0;
+  int float_num = 0;
+  for (int i=paras->first(); paras->more(i); i=paras->next(i)) {
+    Symbol name = paras->nth(i)->getName();
+    Symbol type = paras->nth(i)->getType();
+    if (type == Int || type == Bool) {
+      emit_sub("$8", RSP, s);
+      offset -= 8;
+
+      variabletab.addid(name, new int(offset));
+      s << MOV << CALL_REGS[int_num ++] << COMMA << offset << '(' << RBP << ')'<<endl;
+    } else if (type == Float) {
+      emit_sub("$8", RSP, s);
+      offset -= 8;
+
+      variabletab.addid(name, new int(offset));
+      s << MOV << CALL_XMM[float_num ++] << COMMA << offset << '(' << RBP << ')' <<endl;
     }
   }
 
-  stmtblock->code(s);
+  // body
+  body->code(s);
+
   s<<SIZE<<name<<", "<<".-"<<name<<endl;
+  variabletab.exitscope();
 }
 
 void StmtBlock_class::code(ostream &s){
-  VariableDecls vars = this->getVariableDecls();
-  int num = 0;
+  // variable decls
   for (int i=vars->first(); vars->more(i); i=vars->next(i)) {
+    Symbol name = vars->nth(i)->getName();
+
+    offset -= 8;
+    variabletab.addid(name, new int(offset));
+    
     emit_sub("$8", RSP, s);
   }
-  Stmts stmts = this->getStmts();
-  for (int i=0; stmts->more(i); i=stmts->next(i)) {
+
+  for (int i=stmts->first(); stmts->more(i); i=stmts->next(i)) {
     stmts->nth(i)->code(s);
   }
 }
 
 void IfStmt_class::code(ostream &s) {
-  
+  condition->code(s);
+  emit_mrmov(RBP, tempaddress, RAX, s);
+  emit_test(RAX, RAX, s);
+  int else_pos = labelNum ++;
+  int then_pos = labelNum ++;
+  s<<JZ<<" "<<POSITION<<else_pos<<endl;
+  thenexpr->code(s);
+  s<<JMP<<" "<<POSITION<<then_pos<<endl;
+  s<<POSITION<<else_pos<<":"<<endl;
+  elseexpr->code(s);
+  s<<POSITION<<then_pos<<":"<<endl;
 }
 
 void WhileStmt_class::code(ostream &s) {
- 
+  int condition_pos = labelNum ++;
+  int end_pos = labelNum ++;
+  continuePos = condition_pos;
+  breakPos = end_pos;
+
+  s<<POSITION<<condition_pos<<":"<<endl;
+  condition->code(s);
+  emit_mrmov(RBP, tempaddress, RAX, s);
+  emit_test(RAX, RAX, s);
+  s<<JZ<<' '<<POSITION<<end_pos<<endl;
+  body->code(s);
+  s<<JMP<<' '<<POSITION<<condition_pos<<endl;
+  s<<POSITION<<end_pos<<":"<<endl;
 }
 
 void ForStmt_class::code(ostream &s) {
- 
+  int condition_pos = labelNum ++;
+  int expr_pos = labelNum ++;
+  int end_pos = labelNum ++;
+  continuePos = expr_pos;
+  breakPos = end_pos;
+
+  initexpr->code(s);
+  s<<POSITION<<condition_pos<<":"<<endl;
+  condition->code(s);
+  emit_mrmov(RBP, tempaddress, RAX, s);
+  emit_test(RAX, RAX, s);
+  s<<JZ<<" "<<POSITION<<end_pos<<endl;
+  body->code(s);
+  s<<POSITION<<expr_pos<<":"<<endl;
+  loopact->code(s);
+  s<<JMP<<" "<<POSITION<<condition_pos<<endl;
+  s<<POSITION<<end_pos<<":"<<endl;
 }
 
 void ReturnStmt_class::code(ostream &s) {
-    emit_pop(R15, s);
-    emit_pop(R14, s);
-    emit_pop(R13, s);
-    emit_pop(R12, s);
-    emit_pop(R11, s);
-    emit_pop(R10, s);
-    emit_pop(RBX, s);
+  value->code(s);
+  if (value->getType()->get_string() == Float->get_string()) {
+    s<<MOVAPS<<tempaddress<<"("<<RBP<<"), "<<XMM0<<endl;
+  } else if (value->getType()->get_string() != Void->get_string()) {
+    emit_mrmov(RBP, tempaddress, RAX, s);
+  }
 
-    s<<LEAVE<<endl
-    <<RET<<endl;
+  emit_pop(R15, s);
+  emit_pop(R14, s);
+  emit_pop(R13, s);
+  emit_pop(R12, s);
+  emit_pop(R11, s);
+  emit_pop(R10, s);
+  emit_pop(RBX, s);
+
+  s<<LEAVE<<endl
+  <<RET<<endl;
 }
 
 void ContinueStmt_class::code(ostream &s) {
- 
+  s<<JMP<<" "<<POSITION<<continuePos<<endl;
 }
 
 void BreakStmt_class::code(ostream &s) {
+  s<<JMP<<" "<<POSITION<<breakPos<<endl;
 }
 
 void Call_class::code(ostream &s) {
-  
+  int int_num = 0;
+  int float_num = 0;
+  int addr[actuals->len()];
+  int num = 0;
+
+  for (int i=actuals->first(); actuals->more(i); i=actuals->next(i)) {
+    if (actuals->nth(i)->getType()->get_string() == Int->get_string() || actuals->nth(i)->getType()->get_string() == Bool->get_string() || actuals->nth(i)->getType()->get_string() == String->get_string()) {
+      actuals->nth(i)->code(s);
+      addr[i] = tempaddress;
+    }
+
+    if (actuals->nth(i)->getType()->get_string() == Float->get_string()) {
+      num ++;
+      actuals->nth(i)->code(s);
+      addr[i] = tempaddress;
+    }
+  }
+
+  for (int i=actuals->first(); actuals->more(i); i=actuals->next(i)) {
+    if (actuals->nth(i)->getType()->get_string() == Int->get_string() || actuals->nth(i)->getType()->get_string() == Bool->get_string() || actuals->nth(i)->getType()->get_string() == String->get_string()) {
+      s<<MOV<<addr[i]<<"("<<RBP<<")"<<COMMA<<CALL_REGS[int_num ++]<<endl;
+    } else if (actuals->nth(i)->getType()->get_string() == Float->get_string()) {
+      s<<MOVSD<<addr[i]<<"("<<RBP<<")"<<COMMA<<CALL_XMM[float_num ++]<<endl;
+    }
+  }
+
+  if (name == print) {
+    emit_sub("$8", RSP, s);
+    offset -= 8;
+    s<<MOVL<<"$"<<num<<COMMA<<EAX<<endl;
+    emit_call("printf", s);
+  } else if(type->get_string() == Int->get_string() || type->get_string() == Bool->get_string() || type->get_string() == String->get_string()){
+    emit_call(name->get_string(), s);
+    emit_sub("$8", RSP, s);
+    offset -= 8;
+    tempaddress = offset;
+    emit_rmmov(RAX, offset, RBP, s);
+  } else if (type->get_string() == Float->get_string()) {
+    emit_call(name->get_string(), s);
+    emit_sub("$8", RSP, s);
+    offset -= 8;
+    tempaddress = offset;
+    emit_rmmovsd(XMM0, offset, RBP, s);
+  }
   //
   /*
    if function name is printf
@@ -623,110 +726,744 @@ void Call_class::code(ostream &s) {
 }
 
 void Actual_class::code(ostream &s) {
-  
+  expr->code(s);
 }
 
 void Assign_class::code(ostream &s) {
-  Symbol lv = lvalue;
-  Expr rv = value;
-  rv->code(s);
+  value->code(s);
+  emit_mrmov(RBP, tempaddress, RAX, s);
+  
+  variabletab.enterscope();
+  tempaddress = *variabletab.lookup(lvalue);
+  variabletab.exitscope();
 
+  emit_rmmov(RAX, tempaddress, RBP, s);
 }
 
 void Add_class::code(ostream &s) {
-  
+  e1->code(s);
+  int addr1 = tempaddress;
+  e2->code(s);
+  int addr2 = tempaddress;
+  emit_sub("$8", RSP, s);
+  offset -= 8;
+  tempaddress = offset;
+  if (e1->getType()->get_string() == Int->get_string() && e2->getType()->get_string() == Int->get_string()) {
+    emit_mrmov(RBP, addr1, RBX, s);
+    emit_mrmov(RBP, addr2, R10, s);
+    emit_add(R10, RBX, s);
+    emit_rmmov(RBX, offset, RBP, s);
+  } else if (e1->getType()->get_string() == Float->get_string() && e2->getType()->get_string() == Float->get_string()) {
+    emit_mrmovsd(RBP, addr1, XMM4, s);
+    emit_mrmovsd(RBP, addr2, XMM5, s);
+    emit_addsd(XMM5, XMM4, s);
+    emit_rmmovsd(XMM4, offset, RBP, s);
+  } else if (e1->getType()->get_string() == Int->get_string() && e2->getType()->get_string() == Float->get_string()) {
+    emit_mrmov(RBP, addr1, RBX, s);
+    emit_mrmovsd(RBP, addr2, XMM5, s);
+    emit_int_to_float(RBX, XMM4, s);
+    emit_addsd(XMM5, XMM4, s);
+    emit_rmmovsd(XMM4, offset, RBP, s);
+  } else if (e1->getType()->get_string() == Float->get_string() && e2->getType()->get_string() == Int->get_string()) {
+    emit_mrmovsd(RBP, addr1, XMM4, s);
+    emit_mrmov(RBP, addr2, RBX, s);
+    emit_int_to_float(RBX, XMM5, s);
+    emit_addsd(XMM5, XMM4, s);
+    emit_rmmovsd(XMM4, offset, RBP, s);
+  }
 }
 
 void Minus_class::code(ostream &s) {
- 
+  e1->code(s);
+  int addr1 = tempaddress;
+  e2->code(s);
+  int addr2 = tempaddress;
+  emit_sub("$8", RSP, s);
+  offset -= 8;
+  tempaddress = offset;
+  if (e1->getType()->get_string() == Int->get_string() && e2->getType()->get_string() == Int->get_string()) {
+    emit_mrmov(RBP, addr1, RBX, s);
+    emit_mrmov(RBP, addr2, R10, s);
+    emit_sub(R10, RBX, s);
+    emit_rmmov(RBX, offset, RBP, s);
+  } else if (e1->getType()->get_string() == Float->get_string() && e2->getType()->get_string() == Float->get_string()) {
+    emit_mrmovsd(RBP, addr1, XMM4, s);
+    emit_mrmovsd(RBP, addr2, XMM5, s);
+    emit_subsd(XMM5, XMM4, s);
+    emit_rmmovsd(XMM4, offset, RBP, s);
+  } else if (e1->getType()->get_string() == Int->get_string() && e2->getType()->get_string() == Float->get_string()) {
+    emit_mrmov(RBP, addr1, RBX, s);
+    emit_mrmovsd(RBP, addr2, XMM5, s);
+    emit_int_to_float(RBX, XMM4, s);
+    emit_subsd(XMM5, XMM4, s);
+    emit_rmmovsd(XMM4, offset, RBP, s);
+  } else if (e1->getType()->get_string() == Float->get_string() && e2->getType()->get_string() == Int->get_string()) {
+    emit_mrmovsd(RBP, addr1, XMM4, s);
+    emit_mrmov(RBP, addr2, RBX, s);
+    emit_int_to_float(RBX, XMM5, s);
+    emit_subsd(XMM5, XMM4, s);
+    emit_rmmovsd(XMM4, offset, RBP, s);
+  }
 }
 
 void Multi_class::code(ostream &s) {
- 
+  e1->code(s);
+  int addr1 = tempaddress;
+  e2->code(s);
+  int addr2 = tempaddress;
+  emit_sub("$8", RSP, s);
+  offset -= 8;
+  tempaddress = offset;
+  if (e1->getType()->get_string() == Int->get_string() && e2->getType()->get_string() == Int->get_string()) {
+    emit_mrmov(RBP, addr1, RBX, s);
+    emit_mrmov(RBP, addr2, R10, s);
+    emit_mul(R10, RBX, s);
+    emit_rmmov(RBX, offset, RBP, s);
+  } else if (e1->getType()->get_string() == Float->get_string() && e2->getType()->get_string() == Float->get_string()) {
+    emit_mrmovsd(RBP, addr1, XMM4, s);
+    emit_mrmovsd(RBP, addr2, XMM5, s);
+    emit_mulsd(XMM5, XMM4, s);
+    emit_rmmovsd(XMM4, offset, RBP, s);
+  } else if (e1->getType()->get_string() == Int->get_string() && e2->getType()->get_string() == Float->get_string()) {
+    emit_mrmov(RBP, addr1, RBX, s);
+    emit_mrmovsd(RBP, addr2, XMM5, s);
+    emit_int_to_float(RBX, XMM4, s);
+    emit_mulsd(XMM5, XMM4, s);
+    emit_rmmovsd(XMM4, offset, RBP, s);
+  } else if (e1->getType()->get_string() == Float->get_string() && e2->getType()->get_string() == Int->get_string()) {
+    emit_mrmovsd(RBP, addr1, XMM4, s);
+    emit_mrmov(RBP, addr2, RBX, s);
+    emit_int_to_float(RBX, XMM5, s);
+    emit_mulsd(XMM5, XMM4, s);
+    emit_rmmovsd(XMM4, offset, RBP, s);
+  }
 }
 
 void Divide_class::code(ostream &s) {
- 
+  e1->code(s);
+  int addr1 = tempaddress;
+  e2->code(s);
+  int addr2 = tempaddress;
+  emit_sub("$8", RSP, s);
+  offset -= 8;
+  tempaddress = offset;
+  if (e1->getType()->get_string() == Int->get_string() && e2->getType()->get_string() == Int->get_string()) {
+    emit_mrmov(RBP, addr1, RAX, s);
+    emit_cqto(s);
+    emit_mrmov(RBP, addr2, RAX, s);
+    emit_div(RBX, s);
+    emit_rmmov(RAX, offset, RBP, s);
+  } else if (e1->getType()->get_string() == Float->get_string() && e2->getType()->get_string() == Float->get_string()) {
+    emit_mrmovsd(RBP, addr1, XMM4, s);
+    emit_mrmovsd(RBP, addr2, XMM5, s);
+    emit_divsd(XMM5, XMM4, s);
+    emit_rmmovsd(XMM4, offset, RBP, s);
+  } else if (e1->getType()->get_string() == Int->get_string() && e2->getType()->get_string() == Float->get_string()) {
+    emit_mrmov(RBP, addr1, RBX, s);
+    emit_mrmovsd(RBP, addr2, XMM5, s);
+    emit_int_to_float(RBX, XMM4, s);
+    emit_divsd(XMM5, XMM4, s);
+    emit_rmmovsd(XMM4, offset, RBP, s);
+  } else if (e1->getType()->get_string() == Float->get_string() && e2->getType()->get_string() == Int->get_string()) {
+    emit_mrmovsd(RBP, addr1, XMM4, s);
+    emit_mrmov(RBP, addr2, RBX, s);
+    emit_int_to_float(RBX, XMM5, s);
+    emit_divsd(XMM5, XMM4, s);
+    emit_rmmovsd(XMM4, offset, RBP, s);
+  }
 }
 
 void Mod_class::code(ostream &s) {
- 
+  e1->code(s);
+  int addr1 = tempaddress;
+  e2->code(s);
+  int addr2 = tempaddress;
+  emit_sub("$8", RSP, s); 
+  offset -= 8;
+  tempaddress = offset;
+
+  emit_mrmov(RBP, addr1, RAX, s);
+  emit_cqto(s);
+  emit_mrmov(RBP, addr2, RBX, s);
+  emit_div(RBX, s);
+  emit_rmmov(RDX, offset, RBP, s);
 }
 
 void Neg_class::code(ostream &s) {
- 
+  e1->code(s);
+  int addr1 = tempaddress;
+  emit_sub("$8", RSP, s);
+  offset -= 8;
+  tempaddress = offset;
+
+  if (e1->getType()->get_string() == Int->get_string()) {
+    emit_mrmov(RBP, addr1, RAX, s);
+    emit_neg(RAX, s);
+    emit_rmmov(RAX, offset, RBP, s);
+  } else {
+    emit_sub("$8", RSP, s);
+    emit_mov("$0x8000000000000000",RAX,s);
+    emit_mrmov(RBP,offset,RDX,s);
+    emit_xor(RAX,RDX,s);
+    emit_rmmov(RDX,offset,RBP,s);
+  }
 }
 
 void Lt_class::code(ostream &s) {
-  
+  e1->code(s);
+  int addr1 = tempaddress;
+  e2->code(s);
+  int addr2 = tempaddress;
+
+  emit_sub("$8", RSP, s);
+  offset -= 8;
+  tempaddress = offset;
+  if (e1->getType()->get_string() == Int->get_string() && e2->getType()->get_string() == Int->get_string()) {
+    emit_mrmov(RBP,addr1,RAX,s);
+    emit_mrmov(RBP,addr2,RDX,s);
+    emit_cmp(RDX,RAX,s);
+    int pos1 = labelNum ++;
+    int pos2 = labelNum ++;
+    s<<JL<<" "<<POSITION<<pos1<<endl;
+    emit_mov("$0", RAX, s);
+    s<<JMP<<" "<<POSITION<<pos2<<endl;
+    s<<POSITION<<pos1<<":"<<endl;
+    emit_mov("$1",RAX,s);
+    s<<POSITION<<pos2<<":"<<endl;
+    emit_rmmov(RAX,offset,RBP,s);
+  } else if (e1->getType()->get_string() == Float->get_string() && e2->getType()->get_string() == Int->get_string()) {
+    emit_mrmovsd(RBP, addr1, XMM1, s);
+    emit_mrmov(RBP, addr2, RAX, s);
+    emit_int_to_float(RAX, XMM0, s);
+    emit_ucompisd(XMM0, XMM1, s);
+    int pos1 = labelNum ++;
+    int pos2 = labelNum ++;
+    s<<JB<<" "<<POSITION<<pos1<<endl;
+    emit_mov("$0",RAX,s);
+    s<<JMP<<" "<<POSITION<<pos2<< endl;
+    s<<POSITION<<pos1<<":"<<endl;
+    emit_mov("$1",RAX,s);
+    s<<POSITION<<pos2<<":"<<endl;
+    emit_rmmov(RAX,offset,RBP,s);
+  } else if (e1->getType()->get_string() == Int->get_string() && e2->getType()->get_string() == Float->get_string()) {
+    emit_mrmov(RBP,addr1,RAX,s);
+    emit_int_to_float(RAX,XMM0,s);
+    emit_mrmovsd(RBP,addr2,XMM1,s);
+    emit_ucompisd(XMM0,XMM1,s);
+    int pos1 = labelNum ++;
+    int pos2 = labelNum ++;
+    s<<JB<<" "<<POSITION<<pos1<<endl;
+    emit_mov("$0",RAX,s);
+    s<<JMP<<" "<<POSITION<<pos2<<endl;
+    s<<POSITION<<pos1<<":"<<endl;
+    emit_mov("$1",RAX,s);
+    s<<POSITION<<pos2<<":"<<endl;
+    emit_rmmov(RAX, 0, RBP, s);
+  } else if (e1->getType()->get_string() == Float->get_string() && e2->getType()->get_string() == Float->get_string()) {
+    emit_mrmovsd(RBP, addr1, XMM0, s);
+    emit_mrmovsd(RBP, addr2, XMM1, s);
+    emit_ucompisd(XMM0, XMM1, s);
+    int pos1 = labelNum ++;
+    int pos2 = labelNum ++;
+    s<<JB<<" "<<POSITION<<pos1<<endl;
+    emit_mov("$0",RAX,s);
+    s<<JMP<<" "<<POSITION<<pos2<<endl;
+    s<<POSITION<<pos1<<":"<<endl;
+    emit_mov("$1",RAX,s);
+    s<<POSITION<<pos2<<":"<<endl;
+    emit_rmmov(RAX,offset,RBP,s);
+  }
 }
 
 void Le_class::code(ostream &s) {
- 
+  e1->code(s);
+  int addr1 = tempaddress;
+  e2->code(s);
+  int addr2 = tempaddress;
+
+  emit_sub("$8", RSP, s);
+  offset -= 8;
+  tempaddress = offset;
+  if (e1->getType()->get_string() == Int->get_string() && e2->getType()->get_string() == Int->get_string()) {
+    emit_mrmov(RBP,addr1,RAX,s);
+    emit_mrmov(RBP,addr2,RDX,s);
+    emit_cmp(RDX,RAX,s);
+    int pos1 = labelNum ++;
+    int pos2 = labelNum ++;
+    s<<JLE<<" "<<POSITION<<pos1<<endl;
+    emit_mov("$0", RAX, s);
+    s<<JMP<<" "<<POSITION<<pos2<< endl;
+    s<<POSITION<<pos1<<":"<<endl;
+    emit_mov("$1",RAX,s);
+    s<<POSITION<<pos2<<":"<<endl;
+    emit_rmmov(RAX,offset,RBP,s);
+  } else if (e1->getType()->get_string() == Float->get_string() && e2->getType()->get_string() == Int->get_string()) {
+    emit_mrmovsd(RBP, addr1, XMM1, s);
+    emit_mrmov(RBP, addr2, RAX, s);
+    emit_int_to_float(RAX, XMM0, s);
+    emit_ucompisd(XMM0, XMM1, s);
+    int pos1 = labelNum ++;
+    int pos2 = labelNum ++;
+    s<<JBE<<" "<<POSITION<<pos1<<endl;
+    emit_mov("$0",RAX,s);
+    s<<JMP<<" "<<POSITION<<pos2<< endl;
+    s<<POSITION<<pos1<<":"<<endl;
+    emit_mov("$1",RAX,s);
+    s<<POSITION<<pos2<<":"<<endl;
+    emit_rmmov(RAX,offset,RBP,s);
+  } else if (e1->getType()->get_string() == Int->get_string() && e2->getType()->get_string() == Float->get_string()) {
+    emit_mrmov(RBP,addr1,RAX,s);
+    emit_int_to_float(RAX, XMM0, s);
+    emit_mrmovsd(RBP, addr2, XMM1, s);
+    emit_ucompisd(XMM0, XMM1, s);
+    int pos1 = labelNum ++;
+    int pos2 = labelNum ++;
+    s<<JBE<<" "<<POSITION<<pos1<<endl;
+    emit_mov("$0",RAX,s);
+    s<<JMP<<" "<<POSITION<<pos2<<endl;
+    s<<POSITION<<pos1<<":"<<endl;
+    emit_mov("$1",RAX,s);
+    s<<POSITION<<pos2<<":"<<endl;
+    emit_rmmov(RAX,0,RBP,s);
+  } else if (e1->getType()->get_string() == Float->get_string() && e2->getType()->get_string() == Float->get_string()) {
+    emit_mrmovsd(RBP, addr1, XMM0, s);
+    emit_mrmovsd(RBP, addr2, XMM1, s);
+    emit_ucompisd(XMM0, XMM1,s);
+    int pos1 = labelNum ++;
+    int pos2 = labelNum ++;
+    s<<JBE<<" "<<POSITION<<pos1<<endl;
+    emit_mov("$0",RAX,s);
+    s<<JMP<<" "<<POSITION<<pos2<<endl;
+    s<<POSITION<<pos1<<":"<<endl;
+    emit_mov("$1",RAX,s);
+    s<<POSITION<<pos2<<":"<<endl;
+    emit_rmmov(RAX,offset,RBP,s);
+  }
 }
 
 void Equ_class::code(ostream &s) {
- 
+  e1->code(s);
+  int addr1 = tempaddress;
+  e2->code(s);
+  int addr2 = tempaddress;
+
+  emit_sub("$8", RSP, s);
+  offset -= 8;
+  tempaddress = offset;
+  if (e1->getType()->get_string() == Int->get_string() && e2->getType()->get_string() == Int->get_string()) {
+    emit_mrmov(RBP,addr1,RAX,s);
+    emit_mrmov(RBP,addr2,RDX,s);
+    emit_cmp(RDX,RAX,s);
+    int pos1 = labelNum ++;
+    int pos2 = labelNum ++;
+    s<<JE<<" "<<POSITION<<pos1<<endl;
+    emit_mov("$0", RAX, s);
+    s<<JMP<<" "<<POSITION<<pos2<< endl;
+    s<<POSITION<<pos1<<":"<<endl;
+    emit_mov("$1",RAX,s);
+    s<<POSITION<<pos2<<":"<<endl;
+    emit_rmmov(RAX,offset,RBP,s);
+  } else if (e1->getType()->get_string() == Float->get_string() && e2->getType()->get_string() == Int->get_string()) {
+    emit_mrmovsd(RBP, addr1, XMM1, s);
+    emit_mrmov(RBP, addr2, RAX, s);
+    emit_int_to_float(RAX, XMM0, s);
+    emit_ucompisd(XMM0, XMM1, s);
+    int pos1 = labelNum ++;
+    int pos2 = labelNum ++;
+    s<<JE<<" "<<POSITION<<pos1<<endl;
+    emit_mov("$0",RAX,s);
+    s<<JMP<<" "<<POSITION<<pos2<< endl;
+    s<<POSITION<<pos1<<":"<<endl;
+    emit_mov("$1",RAX,s);
+    s<<POSITION<<pos2<<":"<<endl;
+    emit_rmmov(RAX,offset,RBP,s);
+  } else if (e1->getType()->get_string() == Int->get_string() && e2->getType()->get_string() == Float->get_string()) {
+    emit_mrmov(RBP,addr1,RAX,s);
+    emit_int_to_float(RAX, XMM0, s);
+    emit_mrmovsd(RBP, addr2, XMM1, s);
+    emit_ucompisd(XMM0, XMM1, s);
+    int pos1 = labelNum ++;
+    int pos2 = labelNum ++;
+    s<<JE<<" "<<POSITION<<pos1<<endl;
+    emit_mov("$0",RAX,s);
+    s<<JMP<<" "<<POSITION<<pos2<<endl;
+    s<<POSITION<<pos1<<":"<<endl;
+    emit_mov("$1",RAX,s);
+    s<<POSITION<<pos2<<":"<<endl;
+    emit_rmmov(RAX,0,RBP,s);
+  } else if (e1->getType()->get_string() == Float->get_string() && e2->getType()->get_string() == Float->get_string()) {
+    emit_mrmovsd(RBP, addr1, XMM0, s);
+    emit_mrmovsd(RBP, addr2, XMM1, s);
+    emit_ucompisd(XMM0, XMM1, s);
+    int pos1 = labelNum ++;
+    int pos2 = labelNum ++;
+    s<<JE<<" "<<POSITION<<pos1<<endl;
+    emit_mov("$0",RAX,s);
+    s<<JMP<<" "<<POSITION<<pos2<<endl;
+    s<<POSITION<<pos1<<":"<<endl;
+    emit_mov("$1",RAX,s);
+    s<<POSITION<<pos2<<":"<<endl;
+    emit_rmmov(RAX,offset,RBP,s);
+  }
 }
 
 void Neq_class::code(ostream &s) {
- 
+  e1->code(s);
+  int addr1 = tempaddress;
+  e2->code(s);
+  int addr2 = tempaddress;
+
+  emit_sub("$8", RSP, s);
+  offset -= 8;
+  tempaddress = offset;
+  if (e1->getType()->get_string() == Int->get_string() && e2->getType()->get_string() == Int->get_string()) {
+    emit_mrmov(RBP,addr1,RAX,s);
+    emit_mrmov(RBP,addr2,RDX,s);
+    emit_cmp(RDX,RAX,s);
+    int pos1 = labelNum ++;
+    int pos2 = labelNum ++;
+    s<<JNE<<" "<<POSITION<<pos1<<endl;
+    emit_mov("$0", RAX, s);
+    s<<JMP<<" "<<POSITION<<pos2<< endl;
+    s<<POSITION<<pos1<<":"<<endl;
+    emit_mov("$1",RAX,s);
+    s<<POSITION<<pos2<<":"<<endl;
+    emit_rmmov(RAX,offset,RBP,s);
+  } else if (e1->getType()->get_string() == Float->get_string() && e2->getType()->get_string() == Int->get_string()) {
+    emit_mrmovsd(RBP, addr1, XMM1, s);
+    emit_mrmov(RBP, addr2, RAX, s);
+    emit_int_to_float(RAX, XMM0, s);
+    emit_ucompisd(XMM0, XMM1, s);
+    int pos1 = labelNum ++;
+    int pos2 = labelNum ++;
+    s<<JNE<<" "<<POSITION<<pos1<<endl;
+    emit_mov("$0",RAX,s);
+    s<<JMP<<" "<<POSITION<<pos2<< endl;
+    s<<POSITION<<pos1<<":"<<endl;
+    emit_mov("$1",RAX,s);
+    s<<POSITION<<pos2<<":"<<endl;
+    emit_rmmov(RAX,offset,RBP,s);
+  } else if (e1->getType()->get_string() == Int->get_string() && e2->getType()->get_string() == Float->get_string()) {
+    emit_mrmov(RBP, addr1, RAX, s);
+    emit_int_to_float(RAX, XMM0, s);
+    emit_mrmovsd(RBP, addr2, XMM1, s);
+    emit_ucompisd(XMM0, XMM1, s);
+    int pos1 = labelNum ++;
+    int pos2 = labelNum ++;
+    s<<JNE<<" "<<POSITION<<pos1<<endl;
+    emit_mov("$0",RAX,s);
+    s<<JMP<<" "<<POSITION<<pos2<<endl;
+    s<<POSITION<<pos1<<":"<<endl;
+    emit_mov("$1",RAX,s);
+    s<<POSITION<<pos2<<":"<<endl;
+    emit_rmmov(RAX,0,RBP,s);
+  } else if (e1->getType()->get_string() == Float->get_string() && e2->getType()->get_string() == Float->get_string()) {
+    emit_mrmovsd(RBP, addr1, XMM0, s);
+    emit_mrmovsd(RBP, addr2, XMM1, s);
+    emit_ucompisd(XMM0, XMM1, s);
+    int pos1 = labelNum ++;
+    int pos2 = labelNum ++;
+    s<<JNE<<" "<<POSITION<<pos1<<endl;
+    emit_mov("$0",RAX,s);
+    s<<JMP<<" "<<POSITION<<pos2<<endl;
+    s<<POSITION<<pos1<<":"<<endl;
+    emit_mov("$1",RAX,s);
+    s<<POSITION<<pos2<<":"<<endl;
+    emit_rmmov(RAX,offset,RBP,s);
+  }
 }
 
 void Ge_class::code(ostream &s) {
- 
+  e1->code(s);
+  int addr1 = tempaddress;
+  e2->code(s);
+  int addr2 = tempaddress;
+
+  emit_sub("$8", RSP, s);
+  offset -= 8;
+  tempaddress = offset;
+  if (e1->getType()->get_string() == Int->get_string() && e2->getType()->get_string() == Int->get_string()) {
+    emit_mrmov(RBP,addr1,RAX,s);
+    emit_mrmov(RBP,addr2,RDX,s);
+    emit_cmp(RDX,RAX,s);
+    int pos1 = labelNum ++;
+    int pos2 = labelNum ++;
+    s<<JGE<<" "<<POSITION<<pos1<<endl;
+    emit_mov("$0", RAX, s);
+    s<<JMP<<" "<<POSITION<<pos2<< endl;
+    s<<POSITION<<pos1<<":"<<endl;
+    emit_mov("$1",RAX,s);
+    s<<POSITION<<pos2<<":"<<endl;
+    emit_rmmov(RAX,offset,RBP,s);
+  } else if (e1->getType()->get_string() == Float->get_string() && e2->getType()->get_string() == Int->get_string()) {
+    emit_mrmovsd(RBP, addr1, XMM1, s);
+    emit_mrmov(RBP, addr2, RAX, s);
+    emit_int_to_float(RAX, XMM0, s);
+    emit_ucompisd(XMM0, XMM1, s);
+    int pos1 = labelNum ++;
+    int pos2 = labelNum ++;
+    s<<JAE<<" "<<POSITION<<pos1<<endl;
+    emit_mov("$0",RAX,s);
+    s<<JMP<<" "<<POSITION<<pos2<< endl;
+    s<<POSITION<<pos1<<":"<<endl;
+    emit_mov("$1",RAX,s);
+    s<<POSITION<<pos2<<":"<<endl;
+    emit_rmmov(RAX,offset,RBP,s);
+  } else if (e1->getType()->get_string() == Int->get_string() && e2->getType()->get_string() == Float->get_string()) {
+    emit_mrmov(RBP,addr1,RAX,s);
+    emit_int_to_float(RAX, XMM0, s);
+    emit_mrmovsd(RBP, addr2, XMM1, s);
+    emit_ucompisd(XMM0, XMM1, s);
+    int pos1 = labelNum ++;
+    int pos2 = labelNum ++;
+    s<<JAE<<" "<<POSITION<<pos1<<endl;
+    emit_mov("$0",RAX,s);
+    s<<JMP<<" "<<POSITION<<pos2<<endl;
+    s<<POSITION<<pos1<<":"<<endl;
+    emit_mov("$1",RAX,s);
+    s<<POSITION<<pos2<<":"<<endl;
+    emit_rmmov(RAX,0,RBP,s);
+  } else if (e1->getType()->get_string() == Float->get_string() && e2->getType()->get_string() == Float->get_string()) {
+    emit_mrmovsd(RBP, addr1, XMM0, s);
+    emit_mrmovsd(RBP, addr2, XMM1, s);
+    emit_ucompisd(XMM0, XMM1, s);
+    int pos1 = labelNum ++;
+    int pos2 = labelNum ++;
+    s<<JAE<<" "<<POSITION<<pos1<<endl;
+    emit_mov("$0",RAX,s);
+    s<<JMP<<" "<<POSITION<<pos2<<endl;
+    s<<POSITION<<pos1<<":"<<endl;
+    emit_mov("$1",RAX,s);
+    s<<POSITION<<pos2<<":"<<endl;
+    emit_rmmov(RAX,offset,RBP,s);
+  }
 }
 
 void Gt_class::code(ostream &s) {
- 
+  e1->code(s);
+  int addr1 = tempaddress;
+  e2->code(s);
+  int addr2 = tempaddress;
+
+  emit_sub("$8", RSP, s);
+  offset -= 8;
+  tempaddress = offset;
+  if (e1->getType()->get_string() == Int->get_string() && e2->getType()->get_string() == Int->get_string()) {
+    emit_mrmov(RBP,addr1,RAX,s);
+    emit_mrmov(RBP,addr2,RDX,s);
+    emit_cmp(RDX,RAX,s);
+    int pos1 = labelNum ++;
+    int pos2 = labelNum ++;
+    s<<JG<<" "<<POSITION<<pos1<<endl;
+    emit_mov("$0", RAX, s);
+    s<<JMP<<" "<<POSITION<<pos2<< endl;
+    s<<POSITION<<pos1<<":"<<endl;
+    emit_mov("$1",RAX,s);
+    s<<POSITION<<pos2<<":"<<endl;
+    emit_rmmov(RAX,offset,RBP,s);
+  } else if (e1->getType()->get_string() == Float->get_string() && e2->getType()->get_string() == Int->get_string()) {
+    emit_mrmovsd(RBP, addr1, XMM1, s);
+    emit_mrmov(RBP, addr2, RAX, s);
+    emit_int_to_float(RAX, XMM0, s);
+    emit_ucompisd(XMM0, XMM1, s);
+    int pos1 = labelNum ++;
+    int pos2 = labelNum ++;
+    s<<JA<<" "<<POSITION<<pos1<<endl;
+    emit_mov("$0",RAX,s);
+    s<<JMP<<" "<<POSITION<<pos2<< endl;
+    s<<POSITION<<pos1<<":"<<endl;
+    emit_mov("$1",RAX,s);
+    s<<POSITION<<pos2<<":"<<endl;
+    emit_rmmov(RAX,offset,RBP,s);
+  } else if (e1->getType()->get_string() == Int->get_string() && e2->getType()->get_string() == Float->get_string()) {
+    emit_mrmov(RBP, addr1, RAX, s);
+    emit_int_to_float(RAX, XMM0, s);
+    emit_mrmovsd(RBP, addr2, XMM1, s);
+    emit_ucompisd(XMM0, XMM1, s);
+    int pos1 = labelNum ++;
+    int pos2 = labelNum ++;
+    s<<JA<<" "<<POSITION<<pos1<<endl;
+    emit_mov("$0", RAX, s);
+    s<<JMP<<" "<<POSITION<<pos2<<endl;
+    s<<POSITION<<pos1<<":"<<endl;
+    emit_mov("$1",RAX,s);
+    s<<POSITION<<pos2<<":"<<endl;
+    emit_rmmov(RAX, 0, RBP, s);
+  } else if (e1->getType()->get_string() == Float->get_string() && e2->getType()->get_string() == Float->get_string()) {
+    emit_mrmovsd(RBP, addr1, XMM0, s);
+    emit_mrmovsd(RBP, addr2, XMM1, s);
+    emit_ucompisd(XMM0, XMM1, s);
+    int pos1 = labelNum ++;
+    int pos2 = labelNum ++;
+    s<<JA<<" "<<POSITION<<pos1<<endl;
+    emit_mov("$0", RAX, s);
+    s<<JMP<<" "<<POSITION<<pos2<<endl;
+    s<<POSITION<<pos1<<":"<<endl;
+    emit_mov("$1",RAX,s);
+    s<<POSITION<<pos2<<":"<<endl;
+    emit_rmmov(RAX, offset, RBP, s);
+  }
 }
 
 void And_class::code(ostream &s) {
- 
+  e1->code(s);
+  int addr1 = tempaddress;
+  e2->code(s);
+  int addr2 = tempaddress;
+
+  emit_sub("$8", RSP, s);
+  offset -= 8;
+  tempaddress = offset;
+
+  emit_mrmov(RBP, addr1, RAX, s);
+  emit_mrmov(RBP, addr2, RDX, s);
+  emit_and(RAX, RDX, s);
+  emit_rmmov(RDX, offset, RBP, s);
 }
 
 void Or_class::code(ostream &s) {
- 
+  e1->code(s);
+  int addr1 = tempaddress;
+  e2->code(s);
+  int addr2 = tempaddress;
+
+  emit_sub("$8", RSP, s);
+  offset -= 8;
+  tempaddress = offset;
+
+  emit_mrmov(RBP, addr1, RAX, s);
+  emit_mrmov(RBP, addr2, RDX, s);
+  emit_or(RAX, RDX, s);
+  emit_rmmov(RDX, offset, RBP, s);
 }
 
 void Xor_class::code(ostream &s) {
- 
+  e1->code(s);
+  int addr1 = tempaddress;
+  e2->code(s);
+  int addr2 = tempaddress;
+
+  emit_sub("$8", RSP, s);
+  offset -= 8;
+  tempaddress = offset;
+
+  emit_mrmov(RBP, addr1, RAX, s);
+  emit_mrmov(RBP, addr2, RDX, s);
+  emit_xor(RAX, RDX, s);
+  emit_rmmov(RDX, offset, RBP, s);
 }
 
 void Not_class::code(ostream &s) {
- 
+  e1->code(s);
+  int addr1 = tempaddress;
+
+  emit_sub("$8", RSP, s);
+  offset -= 8;
+  tempaddress = offset;
+
+  emit_mrmov(RBP, addr1, RAX, s);
+  emit_mov("$$0x0000000000000001", RDX, s);
+  emit_xor(RDX, RAX, s);
+  emit_rmmov(RAX, offset, RBX, s);
 }
 
 void Bitnot_class::code(ostream &s) {
+  e1->code(s);
+  int addr1 = tempaddress;
 
+  emit_sub("$8", RSP, s);
+  offset -= 8;
+  tempaddress = offset;
+  
+  emit_mrmov(RBP, addr1, RAX, s);
+  emit_not(RAX, s);
+  emit_rmmov(RAX, offset, RBP, s);
 }
 
 void Bitand_class::code(ostream &s) {
+  e1->code(s);
+  int addr1 = tempaddress;
+  e2->code(s);
+  int addr2 = tempaddress;
 
+  emit_sub("$8", RSP, s);
+  offset -= 8;
+  tempaddress = offset;
+
+  emit_mrmov(RBP, addr1, RAX, s);
+  emit_mrmov(RBP, addr2, RDX, s);
+  emit_and(RAX, RDX, s);
+  emit_rmmov(RDX, offset, RBP, s);
 }
 
 void Bitor_class::code(ostream &s) {
- 
+  e1->code(s);
+  int addr1 = tempaddress;
+  e2->code(s);
+  int addr2 = tempaddress;
+
+  emit_sub("$8", RSP, s);
+  offset -= 8;
+  tempaddress = offset;
+
+  emit_mrmov(RBP, addr1, RAX, s);
+  emit_mrmov(RBP, addr2, RDX, s);
+  emit_or(RAX, RDX, s);
+  emit_rmmov(RDX, offset, RBP, s);
 }
 
 void Const_int_class::code(ostream &s) {
- 
+  emit_sub("$8",RSP,s);
+  offset -= 8;
+  tempaddress = offset;
+
+  s<<MOV<<"$"<<value<<COMMA<<RAX<<endl;
+  
+  emit_rmmov(RAX, tempaddress, RBP, s);
 }
 
 void Const_string_class::code(ostream &s) {
- 
+  emit_sub("$8", RSP, s);
+  offset -= 8;
+  tempaddress = offset;
+  s<<MOV;
+  stringtable.lookup_string(value->get_string())->code_ref(s);
+  s<<COMMA<<RAX<<endl;
+
+  emit_rmmov(RAX, tempaddress, RBP, s);
 }
 
 void Const_float_class::code(ostream &s) {
- 
+  emit_sub("$8", RSP, s);
+  offset -= 8;
+  tempaddress = offset;
+
+  double num = atof(value->get_string());
+  unsigned long long res = *(unsigned long long *) &num;
+  char test[17];
+  sprintf(test, "%llx", res);
+  
+  s<<MOV<<"$0x";
+  s<<test;
+  s<<COMMA<<RAX<<endl;
+
+  emit_rmmov(RAX, tempaddress, RBP, s);
 }
 
 void Const_bool_class::code(ostream &s) {
- 
+  emit_sub("$8", RSP, s);
+  offset -= 8;
+  tempaddress = offset;
+
+  s<<MOV<<"$"<<value<<COMMA<<RAX<<endl;
+
+  emit_rmmov(RAX, tempaddress, RBP, s);
 }
 
 void Object_class::code(ostream &s) {
- 
+  variabletab.enterscope();
+  tempaddress = *variabletab.lookup(var);
+  variabletab.exitscope();
 }
 
 void No_expr_class::code(ostream &s) {

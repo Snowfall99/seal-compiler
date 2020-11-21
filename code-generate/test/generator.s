@@ -65,8 +65,8 @@ ind:
 	subq	$8, %rsp
 	movq	-80(%rbp), %rbx
 	movq	-136(%rbp), %r10
-	addq	%rbx, %r10
-	movq	%r10, -144(%rbp)
+	addq	%r10, %rbx
+	movq	%rbx, -144(%rbp)
 	movq	-144(%rbp), %rax
 	movq	%rax, -80(%rbp)
 	jmp	 .POS0
@@ -142,8 +142,8 @@ main:
 	subq	$8, %rsp
 	movq	-8(%rbp), %rbx
 	movq	-72(%rbp), %r10
-	addq	%rbx, %r10
-	movq	%r10, -80(%rbp)
+	addq	%r10, %rbx
+	movq	%rbx, -80(%rbp)
 	movq	-80(%rbp), %rax
 	movq	%rax, -8(%rbp)
 	jmp	 .POS4
