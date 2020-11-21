@@ -4,4 +4,4 @@
 - [x] lex analysis
 - [x] parsing
 - [x] semant
-- [ ] code-generate
+- [x] code-generate
