@@ -24,25 +24,25 @@ euclidean:
 	movq	-64(%rbp), %rax
 	movq	-72(%rbp), %rdx
 	cmpq	%rdx, %rax
-	jl	 .POS2
+	jl	 .POS0
 	movq	$0, %rax
-	jmp	 .POS3
-.POS2:
+	jmp	 .POS1
+.POS0:
 	movq	$1, %rax
-.POS3:
+.POS1:
 	movq	%rax, -88(%rbp)
 	movq	-88(%rbp), %rax
 	testq	%rax, %rax
-	jz	 .POS0
+	jz	 .POS2
 	movq	-64(%rbp), %rax
 	movq	%rax, -80(%rbp)
 	movq	-72(%rbp), %rax
 	movq	%rax, -64(%rbp)
 	movq	-80(%rbp), %rax
 	movq	%rax, -72(%rbp)
-	jmp	 .POS1
-.POS0:
-.POS1:
+	jmp	 .POS3
+.POS2:
+.POS3:
 .POS4:
 	subq	$8, %rsp
 	movq	-64(%rbp), %rax
