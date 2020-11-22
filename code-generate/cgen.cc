@@ -1438,10 +1438,10 @@ void Const_float_class::code(ostream &s) {
   offset -= 8;
   tempaddress = offset;
 
-  double num = atof(value->get_string());
-  unsigned long long res = *(unsigned long long *) &num;
+  double d_value = atof(value->get_string());
+  unsigned long long hex_value = *(unsigned long long *) &d_value;
   char test[17];
-  sprintf(test, "%llx", res);
+  sprintf(test, "%llx", hex_value);
   
   s<<MOV<<"$0x";
   s<<test;
