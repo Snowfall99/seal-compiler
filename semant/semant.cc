@@ -173,7 +173,7 @@ void VariableDecl_class::check() {
     if (type == Void) {
         semant_error()<<"var "<<name<<" cannot be of type Void. Void can just be used as return type."<<endl;
     } else {
-        objectEnv.addid(name, &type);
+        objectEnv.addid(name, new Symbol(type));
         localVars[name] = type;
     }
 }
@@ -218,7 +218,7 @@ void CallDecl_class::check() {
             if (objectEnv.lookup(name) != NULL) {
                 semant_error(this)<<"Function "<<funcName<< "'s parameter has a duplicate name "<<name<<endl;
             }
-            objectEnv.addid(name, &type);
+            objectEnv.addid(name, new Symbol (type));
             localVars[name] = type;
         }
         // main function should not have any paras
