@@ -189,9 +189,11 @@ void CallDecl_class::check() {
     if (installTable[name] == false) {
         // methodclass stores paras type
         MethodClass mclass;
+        int parasNum = 0;
         for (int j=vars->first(); vars->more(j); j=vars->next(j)) {
             Symbol name = vars->nth(j)->getName();
             Symbol type = vars->nth(j)->getType();
+            parasNum ++;
             
             /* No need to check paras' type because of syntax rules */
 
@@ -202,6 +204,10 @@ void CallDecl_class::check() {
             objectEnv.addid(name, &type);
             localVars[name] = type;
             mclass.push_back(type);
+        }
+
+        if (parasNum > 6) {
+            semant_error(this)<<"Function can't have more than six called parameters"<<endl;
         }
 
         // methodTable map paras to funcname
@@ -359,10 +365,14 @@ Symbol Call_class::checkType(){
         return type;
     }
 
+    if (actuals->len() != int(methodTable[name].size())) {
+        semant_error(this)<<"Wrong number of paras"<<endl;
+    }
+    if (actuals->len() > 6) {
+        semant_error(this)<<"Function can't have more than six called parameters"<<endl;
+    }
+
     if (actuals->len() > 0){
-        if (actuals->len() != int(methodTable[name].size())) {
-            semant_error(this)<<"Wrong number of paras"<<endl;
-        }
         for (int i=actuals->first(); actuals->more(i) && j<methodTable[name].size(); i=actuals->next(i)) {
             Expr expr = actuals->nth(i)->copy_Expr();
             Symbol sym = expr->checkType();
@@ -707,6 +717,3 @@ void Program_class::semant() {
         exit(1);
     }
 }
-
-
-
