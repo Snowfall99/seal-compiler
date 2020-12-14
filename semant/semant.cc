@@ -690,9 +690,14 @@ Symbol Const_bool_class::checkType(){
 }
 
 Symbol Object_class::checkType(){
-    if (objectEnv.lookup(var) == NULL) {
+    if (objectEnv.lookup(var) == NULL && globalVars[var] == NULL) {
         semant_error(this)<<"object "<<var<<" has not been defined."<<endl;
         this->setType(Void);
+        return type;
+    }
+    if (globalVars[var] != NULL) {
+        Symbol ty = globalVars[var];
+        this->setType(ty);
         return type;
     }
     Symbol ty = localVars[var];
