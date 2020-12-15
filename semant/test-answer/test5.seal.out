@@ -1,6 +1,6 @@
-#3
+#4
 Program
-  #3
+  #4
   Call Declaration
     (name)
     main
@@ -10,13 +10,13 @@ Program
     (return type)
     Void
     (body)
-    #3
+    #4
     Statement Block
       (variable declarations)
       (
-      #4
+      #5
       Variable Declaration
-        #4
+        #5
         Variable
           (name)
           c
@@ -25,21 +25,21 @@ Program
       )
       (statements)
       (
-      #5
+      #6
       Assign
         (left value)
         c
         (right value)
-        #5
+        #6
         Call
           (name)
           equal
           (actual parameters)
           (
-          #5
+          #6
           Actual
             (expr)
-            #5
+            #6
             Const_int
               (name)
               2
@@ -47,10 +47,10 @@ Program
             : Int
             (type)
           : Int
-          #5
+          #6
           Actual
             (expr)
-            #5
+            #6
             Const_int
               (name)
               3
@@ -63,25 +63,25 @@ Program
         : Int
         (type)
       : Int
-      #6
+      #7
       ReturnStmt
         (return value)
-        #6
+        #7
         No_expr
       )
-  #8
+  #9
   Call Declaration
     (name)
     equal
     (parameters)
     (
-    #8
+    #9
     Variable
       (name)
       a
       (type)
       Int
-    #8
+    #9
     Variable
       (name)
       b
@@ -91,27 +91,27 @@ Program
     (return type)
     Int
     (body)
-    #8
+    #9
     Statement Block
       (variable declarations)
       (
       )
       (statements)
       (
-      #9
+      #10
       IfStmt
         (condition)
-        #9
+        #10
         !=
           (OP left)
-          #9
+          #10
           Object
             (name)
             a
             (type)
           : Int
           (OP right)
-          #9
+          #10
           Object
             (name)
             b
@@ -119,27 +119,27 @@ Program
           : Int
           (type)
         (then)
-        #9
+        #10
         Statement Block
           (variable declarations)
           (
           )
           (statements)
           (
-          #10
+          #11
           ReturnStmt
             (return value)
-            #10
+            #11
             +
               (OP left)
-              #10
+              #11
               Object
                 (name)
                 a
                 (type)
               : Int
               (OP right)
-              #10
+              #11
               Object
                 (name)
                 b
@@ -149,7 +149,7 @@ Program
             : Int
           )
         (else)
-        #9
+        #10
         Statement Block
           (variable declarations)
           (
@@ -157,10 +157,10 @@ Program
           (statements)
           (
           )
-      #12
+      #13
       ReturnStmt
         (return value)
-        #12
+        #13
         Object
           (name)
           a

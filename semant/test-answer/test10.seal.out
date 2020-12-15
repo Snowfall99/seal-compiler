@@ -1,6 +1,6 @@
-#3
+#4
 Program
-  #3
+  #4
   Call Declaration
     (name)
     main
@@ -10,13 +10,13 @@ Program
     (return type)
     Void
     (body)
-    #3
+    #4
     Statement Block
       (variable declarations)
       (
-      #4
+      #5
       Variable Declaration
-        #4
+        #5
         Variable
           (name)
           x
@@ -25,12 +25,12 @@ Program
       )
       (statements)
       (
-      #5
+      #6
       Assign
         (left value)
         x
         (right value)
-        #5
+        #6
         Const_int
           (name)
           10
@@ -38,22 +38,22 @@ Program
         : Int
         (type)
       : Int
-      #6
+      #7
       Assign
         (left value)
         x
         (right value)
-        #6
+        #7
         +
           (OP left)
-          #6
+          #7
           Object
             (name)
             x
             (type)
           : Int
           (OP right)
-          #6
+          #7
           Const_int
             (name)
             1
@@ -63,9 +63,9 @@ Program
         : Int
         (type)
       : Int
-      #7
+      #8
       ReturnStmt
         (return value)
-        #7
+        #8
         No_expr
       )

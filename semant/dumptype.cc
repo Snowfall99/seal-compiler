@@ -256,14 +256,14 @@ void ForStmt_class::dump_with_types(ostream& stream, int n)
 void BreakStmt_class::dump_with_types(ostream& stream, int n)
 {
    dump_line(stream,n,this);
-   stream << pad(n) << "ContinueStmt\n";
+   stream << pad(n) << "BreakStmt\n";
 }
 
 
 void ContinueStmt_class::dump_with_types(ostream& stream, int n)
 {
    dump_line(stream,n,this);
-   stream << pad(n) << "BreakStmt\n";
+   stream << pad(n) << "ContinueStmt\n";
 }
 
 void ReturnStmt_class::dump_with_types(ostream& stream, int n)

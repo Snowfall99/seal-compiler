@@ -1,12 +1,12 @@
-#3
+#4
 Program
-  #3
+  #4
   Call Declaration
     (name)
     get_a
     (parameters)
     (
-    #3
+    #4
     Variable
       (name)
       a
@@ -16,30 +16,30 @@ Program
     (return type)
     Int
     (body)
-    #3
+    #4
     Statement Block
       (variable declarations)
       (
       )
       (statements)
       (
-      #4
+      #5
       ReturnStmt
         (return value)
-        #4
+        #5
         Object
           (name)
           a
           (type)
         : Int
       )
-  #7
+  #8
   Call Declaration
     (name)
     get_b
     (parameters)
     (
-    #7
+    #8
     Variable
       (name)
       b
@@ -49,24 +49,24 @@ Program
     (return type)
     Int
     (body)
-    #7
+    #8
     Statement Block
       (variable declarations)
       (
       )
       (statements)
       (
-      #8
+      #9
       ReturnStmt
         (return value)
-        #8
+        #9
         Object
           (name)
           b
           (type)
         : Int
       )
-  #10
+  #11
   Call Declaration
     (name)
     main
@@ -76,21 +76,21 @@ Program
     (return type)
     Void
     (body)
-    #10
+    #11
     Statement Block
       (variable declarations)
       (
-      #11
+      #12
       Variable Declaration
-        #11
+        #12
         Variable
           (name)
           a
           (type)
           Int
-      #12
+      #13
       Variable Declaration
-        #12
+        #13
         Variable
           (name)
           b
@@ -99,12 +99,12 @@ Program
       )
       (statements)
       (
-      #13
+      #14
       Assign
         (left value)
         a
         (right value)
-        #13
+        #14
         Const_int
           (name)
           10
@@ -112,12 +112,12 @@ Program
         : Int
         (type)
       : Int
-      #14
+      #15
       Assign
         (left value)
         b
         (right value)
-        #14
+        #15
         Const_int
           (name)
           100
@@ -125,22 +125,22 @@ Program
         : Int
         (type)
       : Int
-      #15
+      #16
       IfStmt
         (condition)
-        #15
+        #16
         >
           (OP left)
-          #15
+          #16
           Call
             (name)
             get_a
             (actual parameters)
             (
-            #15
+            #16
             Actual
               (expr)
-              #15
+              #16
               Object
                 (name)
                 a
@@ -152,16 +152,16 @@ Program
             (type)
           : Int
           (OP right)
-          #15
+          #16
           Call
             (name)
             get_b
             (actual parameters)
             (
-            #15
+            #16
             Actual
               (expr)
-              #15
+              #16
               Object
                 (name)
                 b
@@ -174,19 +174,19 @@ Program
           : Int
           (type)
         (then)
-        #15
+        #16
         Statement Block
           (variable declarations)
           (
           )
           (statements)
           (
-          #16
+          #17
           Assign
             (left value)
             b
             (right value)
-            #16
+            #17
             Object
               (name)
               a
@@ -196,7 +196,7 @@ Program
           : Int
           )
         (else)
-        #15
+        #16
         Statement Block
           (variable declarations)
           (
@@ -204,9 +204,9 @@ Program
           (statements)
           (
           )
-      #18
+      #19
       ReturnStmt
         (return value)
-        #18
+        #19
         No_expr
       )

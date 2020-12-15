@@ -48,7 +48,7 @@ static ostream& semant_error() {
 }
 
 static ostream& semant_error(tree_node *t) {
-    error_stream << t->get_line_number() + 1 << ": ";
+    error_stream << t->get_line_number() << ": ";
     return semant_error();
 }
 
@@ -268,10 +268,27 @@ void CallDecl_class::check() {
 }
 
 void StmtBlock_class::check(Symbol type) {
+    VariableDecls vars = this->getVariableDecls();
     Stmts stmts = this->getStmts(); 
+
+    objectEnv.enterscope();
+
+    for(int n=vars->first(); vars->more(n); n=vars->next(n)){
+
+        Symbol vars_name = vars->nth(n)->getName();
+        Symbol vars_type = vars->nth(n)->getType();
+
+        if(objectEnv.probe(vars_name) != NULL){
+            semant_error(vars->nth(n))<<"var "<<vars_name<< "was previously defined."<<endl;
+        }
+        else vars->nth(n)->check();
+    }
+
     for (int j=stmts->first(); stmts->more(j); j=stmts->next(j)) {
         stmts->nth(j)->check(type);
     }
+
+    objectEnv.exitscope();
 }
 
 void IfStmt_class::check(Symbol type) {
@@ -313,9 +330,10 @@ void ForStmt_class::check(Symbol type) {
     init->checkType();
     loop->checkType();
     // For condition should be Bool
-    Symbol conditionType = condition->checkType();
-    if (conditionType != Bool) {
-        semant_error(this)<<"condition type should be Bool, but found"<<conditionType<<endl;
+    if(condition->is_empty_Expr() == false){
+        if(condition->checkType() != Bool){
+        semant_error(this)<<"Condition must be a Bool, got "<<condition->checkType()<<endl;
+        }
     }
 
     // check For body
@@ -361,6 +379,11 @@ Symbol Call_class::checkType(){
             this->setType(Void);
             return type;
         }
+
+        for(int i=actuals->first(); actuals->more(i); i=actuals->next(i)) {
+            actuals->nth(i)->checkType();
+        }
+
         this->setType(Void);
         return type;
     }
@@ -404,10 +427,16 @@ Symbol Assign_class::checkType(){
     if (objectEnv.lookup(lvalue) == NULL && globalVars[lvalue] == NULL) {
         semant_error(this)<<"Undefined value"<<endl;
     } 
-    Symbol ls = localVars[lvalue];
+
     Symbol rs = value->checkType();
+    Symbol ls;
+    if (localVars[lvalue] != NULL) {
+        ls = localVars[lvalue];
+    } else {
+        ls = globalVars[lvalue];
+    }
     if (ls != rs) {
-        semant_error(this)<<"assign value mismatch"<<endl;
+        semant_error(this)<<"assign value mismatch"<<" lvalue has type "<<ls<<" rvalue has type "<<rs<<endl;
     }    
     this->setType(rs);
     return type;
@@ -695,12 +724,12 @@ Symbol Object_class::checkType(){
         this->setType(Void);
         return type;
     }
-    if (globalVars[var] != NULL) {
-        Symbol ty = globalVars[var];
+    if (localVars[var] != NULL) {
+        Symbol ty = localVars[var];
         this->setType(ty);
         return type;
     }
-    Symbol ty = localVars[var];
+    Symbol ty = globalVars[var];
     this->setType(ty);
     return type;
 }

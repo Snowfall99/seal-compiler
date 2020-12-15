@@ -1,6 +1,6 @@
-#3
+#4
 Program
-  #3
+  #4
   Call Declaration
     (name)
     main
@@ -10,24 +10,16 @@ Program
     (return type)
     Void
     (body)
-    #3
+    #4
     Statement Block
       (variable declarations)
       (
-      #4
-      Variable Declaration
-        #4
-        Variable
-          (name)
-          a
-          (type)
-          Int
       #5
       Variable Declaration
         #5
         Variable
           (name)
-          i
+          a
           (type)
           Int
       #6
@@ -35,12 +27,20 @@ Program
         #6
         Variable
           (name)
-          j
+          i
           (type)
           Int
       #7
       Variable Declaration
         #7
+        Variable
+          (name)
+          j
+          (type)
+          Int
+      #8
+      Variable Declaration
+        #8
         Variable
           (name)
           k
@@ -49,12 +49,12 @@ Program
       )
       (statements)
       (
-      #8
+      #9
       Assign
         (left value)
         a
         (right value)
-        #8
+        #9
         Const_int
           (name)
           0
@@ -62,15 +62,15 @@ Program
         : Int
         (type)
       : Int
-      #9
+      #10
       ForStmt
         (init)
-        #9
+        #10
         Assign
           (left value)
           i
           (right value)
-          #9
+          #10
           Const_int
             (name)
             0
@@ -79,17 +79,17 @@ Program
           (type)
         : Int
         (condition)
-        #9
+        #10
         <
           (OP left)
-          #9
+          #10
           Object
             (name)
             i
             (type)
           : Int
           (OP right)
-          #9
+          #10
           Const_int
             (name)
             5
@@ -98,22 +98,22 @@ Program
           (type)
         : Bool
         (loop)
-        #9
+        #10
         Assign
           (left value)
           i
           (right value)
-          #9
+          #10
           +
             (OP left)
-            #9
+            #10
             Object
               (name)
               i
               (type)
             : Int
             (OP right)
-            #9
+            #10
             Const_int
               (name)
               1
@@ -124,22 +124,22 @@ Program
           (type)
         : Int
         (body)
-        #9
+        #10
         Statement Block
           (variable declarations)
           (
           )
           (statements)
           (
-          #10
+          #11
           ForStmt
             (init)
-            #10
+            #11
             Assign
               (left value)
               j
               (right value)
-              #10
+              #11
               Const_int
                 (name)
                 0
@@ -148,17 +148,17 @@ Program
               (type)
             : Int
             (condition)
-            #10
+            #11
             <
               (OP left)
-              #10
+              #11
               Object
                 (name)
                 j
                 (type)
               : Int
               (OP right)
-              #10
+              #11
               Const_int
                 (name)
                 5
@@ -167,22 +167,22 @@ Program
               (type)
             : Bool
             (loop)
-            #10
+            #11
             Assign
               (left value)
               j
               (right value)
-              #10
+              #11
               +
                 (OP left)
-                #10
+                #11
                 Object
                   (name)
                   j
                   (type)
                 : Int
                 (OP right)
-                #10
+                #11
                 Const_int
                   (name)
                   1
@@ -193,22 +193,22 @@ Program
               (type)
             : Int
             (body)
-            #10
+            #11
             Statement Block
               (variable declarations)
               (
               )
               (statements)
               (
-              #11
+              #12
               ForStmt
                 (init)
-                #11
+                #12
                 Assign
                   (left value)
                   k
                   (right value)
-                  #11
+                  #12
                   Const_int
                     (name)
                     0
@@ -217,17 +217,17 @@ Program
                   (type)
                 : Int
                 (condition)
-                #11
+                #12
                 <
                   (OP left)
-                  #11
+                  #12
                   Object
                     (name)
                     k
                     (type)
                   : Int
                   (OP right)
-                  #11
+                  #12
                   Const_int
                     (name)
                     5
@@ -236,22 +236,22 @@ Program
                   (type)
                 : Bool
                 (loop)
-                #11
+                #12
                 Assign
                   (left value)
                   k
                   (right value)
-                  #11
+                  #12
                   +
                     (OP left)
-                    #11
+                    #12
                     Object
                       (name)
                       k
                       (type)
                     : Int
                     (OP right)
-                    #11
+                    #12
                     Const_int
                       (name)
                       1
@@ -262,30 +262,30 @@ Program
                   (type)
                 : Int
                 (body)
-                #11
+                #12
                 Statement Block
                   (variable declarations)
                   (
                   )
                   (statements)
                   (
-                  #12
+                  #13
                   IfStmt
                     (condition)
-                    #12
+                    #13
                     &&
                       (OP left)
-                      #12
+                      #13
                       !=
                         (OP left)
-                        #12
+                        #13
                         Object
                           (name)
                           i
                           (type)
                         : Int
                         (OP right)
-                        #12
+                        #13
                         Object
                           (name)
                           k
@@ -293,20 +293,20 @@ Program
                         : Int
                         (type)
                       (OP right)
-                      #12
+                      #13
                       &&
                         (OP left)
-                        #12
+                        #13
                         !=
                           (OP left)
-                          #12
+                          #13
                           Object
                             (name)
                             i
                             (type)
                           : Int
                           (OP right)
-                          #12
+                          #13
                           Object
                             (name)
                             j
@@ -314,17 +314,17 @@ Program
                           : Int
                           (type)
                         (OP right)
-                        #12
+                        #13
                         !=
                           (OP left)
-                          #12
+                          #13
                           Object
                             (name)
                             j
                             (type)
                           : Int
                           (OP right)
-                          #12
+                          #13
                           Object
                             (name)
                             k
@@ -334,29 +334,29 @@ Program
                         (type)
                       (type)
                     (then)
-                    #12
+                    #13
                     Statement Block
                       (variable declarations)
                       (
                       )
                       (statements)
                       (
-                      #13
+                      #14
                       Assign
                         (left value)
                         a
                         (right value)
-                        #13
+                        #14
                         +
                           (OP left)
-                          #13
+                          #14
                           Object
                             (name)
                             a
                             (type)
                           : Int
                           (OP right)
-                          #13
+                          #14
                           Const_int
                             (name)
                             1
@@ -368,7 +368,7 @@ Program
                       : Int
                       )
                     (else)
-                    #12
+                    #13
                     Statement Block
                       (variable declarations)
                       (
@@ -379,9 +379,9 @@ Program
                   )
               )
           )
-      #18
+      #19
       ReturnStmt
         (return value)
-        #18
+        #19
         No_expr
       )

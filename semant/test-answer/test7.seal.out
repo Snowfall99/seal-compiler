@@ -1,6 +1,6 @@
-#3
+#4
 Program
-  #3
+  #4
   Call Declaration
     (name)
     main
@@ -10,29 +10,29 @@ Program
     (return type)
     Void
     (body)
-    #3
+    #4
     Statement Block
       (variable declarations)
       (
-      #4
-      Variable Declaration
-        #4
-        Variable
-          (name)
-          a
-          (type)
-          Bool
       #5
       Variable Declaration
         #5
         Variable
           (name)
-          b
+          a
           (type)
           Bool
       #6
       Variable Declaration
         #6
+        Variable
+          (name)
+          b
+          (type)
+          Bool
+      #7
+      Variable Declaration
+        #7
         Variable
           (name)
           c
@@ -41,12 +41,12 @@ Program
       )
       (statements)
       (
-      #8
+      #9
       Assign
         (left value)
         a
         (right value)
-        #8
+        #9
         Const_bool
           (name)
           1
@@ -54,12 +54,12 @@ Program
         : Bool
         (type)
       : Bool
-      #9
+      #10
       Assign
         (left value)
         b
         (right value)
-        #9
+        #10
         Const_bool
           (name)
           0
@@ -67,20 +67,20 @@ Program
         : Bool
         (type)
       : Bool
-      #11
+      #12
       IfStmt
         (condition)
-        #11
+        #12
         ||
           (OP left)
-          #11
+          #12
           Object
             (name)
             a
             (type)
           : Bool
           (OP right)
-          #11
+          #12
           Object
             (name)
             b
@@ -88,19 +88,19 @@ Program
           : Bool
           (type)
         (then)
-        #11
+        #12
         Statement Block
           (variable declarations)
           (
           )
           (statements)
           (
-          #12
+          #13
           Assign
             (left value)
             c
             (right value)
-            #12
+            #13
             Const_int
               (name)
               777
@@ -110,7 +110,7 @@ Program
           : Int
           )
         (else)
-        #11
+        #12
         Statement Block
           (variable declarations)
           (
@@ -118,9 +118,9 @@ Program
           (statements)
           (
           )
-      #14
+      #15
       ReturnStmt
         (return value)
-        #14
+        #15
         No_expr
       )
