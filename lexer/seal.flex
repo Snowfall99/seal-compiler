@@ -68,7 +68,8 @@ NUMBER      (0|[1-9][0-9]*)
 FLOAT       (0|[1-9][0-9]*).[0-9]+
 TYPE_IDENTIFIER   (Float|Int|Bool|String|Void)
 OBJ_IDENTIFIER    [a-z][a-zA-Z0-9_]*
-WRONG_IDENTIFIER  [A-Z_][a-zA-Z0-9_]*
+WRONG_IDENTIFIER  [_0-9][a-zA-Z0-9_]*
+WRONG_TYPEID      [A-Z][a-zA-Z0-9_]*
 
 %Start COMMENT1 COMMENT2 
 %Start STRING1 STRING2
@@ -154,6 +155,11 @@ WRONG_IDENTIFIER  [A-Z_][a-zA-Z0-9_]*
                               return TYPEID;
                             }
 <INITIAL>{WRONG_IDENTIFIER} {
+                              strcpy(string_buf, "illegal Identifier name ");
+                              seal_yylval.error_msg = strcat(string_buf, yytext);
+                              return ERROR;
+                            }
+<INITIAL>{WRONG_TYPEID}     {
                               strcpy(string_buf, "illegal TYPEID ");
                               seal_yylval.error_msg = strcat(string_buf, yytext);
                               return ERROR;
