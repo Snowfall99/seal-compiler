@@ -169,17 +169,16 @@
 	// Add more here
 
     /* Precedence declarations go here. */
-    %right ELSE
     %nonassoc '='
-    %left OR
-    %left AND
-	  %nonassoc '<' '>' EQUAL NE LE GE 
+    %right OR
+    %right AND
+	  %nonassoc EQUAL NE 
+    %nonassoc  '<' '>' LE GE
     %left '+' '-'
     %left '*' '/'
     %left '%'
-    %right UMINUS
-    %right '!' '^' '&' '|'
-    %right IF WHILE
+    %nonassoc UMINUS '!'
+    %left '~' '^' '&' '|'
 	// Add more here
     
 %%
@@ -211,12 +210,14 @@
 		
     variables: variable {$$=single_Variables($1);}
       | variables ',' variable {$$=append_Variables($1, single_Variables($3));}
-      | {$$=nil_Variables();}
       ;
 
     callDecl: FUNC OBJECTID '(' variables ')' TYPEID stmtBlock {$$=callDecl($2, $4, $6, $7);}
+      | FUNC OBJECTID '(' ')' TYPEID stmtBlock {$$=callDecl($2, nil_Variables(), $5, $6);}
+      ;
 
-    stmt: expr ';' {$$=$1;}
+    stmt: ';' {$$=no_expr();} 
+      | expr ';' {$$=$1;}
       | ifStmt {$$=$1;}
       | whileStmt {$$=$1;}
       | forStmt {$$=$1;}
@@ -284,20 +285,21 @@
       | expr OR expr {$$=or_($1, $3);}
       | expr '^' expr {$$=xor_($1, $3);}
       | '!' expr {$$=not_($2);}
-      | '~' CONST_INT {$$=bitnot(object($2));}
-      | CONST_INT '&' CONST_INT {$$=bitand_(object($1), object($3));}
-      | CONST_INT '|' CONST_INT {$$=bitor_(object($1), object($3));}
+      | '~' expr {$$=bitnot($2);}
+      | expr '&' expr {$$=bitand_($1, $3);}
+      | expr '|' expr {$$=bitor_($1, $3);}
       ;
 
     call: OBJECTID '(' actuals ')' {$$=call($1, $3);}
-    
+      | OBJECTID '(' ')' {$$=call($1, nil_Actuals());}
+      ;
+
     lvalue: OBJECTID {$$=$1;}
 
     actual: expr {$$=actual($1);}
 
     actuals: actual {$$=single_Actuals($1);}
       | actuals ',' actual {$$=append_Actuals($1, single_Actuals($3));}
-      | {$$=nil_Actuals();}
       ;
      
  
