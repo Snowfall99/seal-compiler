@@ -850,7 +850,7 @@ void Divide_class::code(ostream &s) {
   if (e1->getType()->get_string() == Int->get_string() && e2->getType()->get_string() == Int->get_string()) {
     emit_mrmov(RBP, addr1, RAX, s);
     emit_cqto(s);
-    emit_mrmov(RBP, addr2, RAX, s);
+    emit_mrmov(RBP, addr2, RBX, s);
     emit_div(RBX, s);
     emit_rmmov(RAX, offset, RBP, s);
   } else if (e1->getType()->get_string() == Float->get_string() && e2->getType()->get_string() == Float->get_string()) {
@@ -902,10 +902,10 @@ void Neg_class::code(ostream &s) {
     emit_rmmov(RAX, offset, RBP, s);
   } else {
     emit_sub("$8", RSP, s);
-    emit_mov("$0x8000000000000000",RAX,s);
-    emit_mrmov(RBP,offset,RDX,s);
-    emit_xor(RAX,RDX,s);
-    emit_rmmov(RDX,offset,RBP,s);
+    emit_mov("$0x8000000000000000", RAX, s);
+    emit_mrmov(RBP, offset, RDX, s);
+    emit_xor(RAX, RDX, s);
+    emit_rmmov(RDX, offset, RBP, s);
   }
 }
 
@@ -919,18 +919,18 @@ void Lt_class::code(ostream &s) {
   offset -= 8;
   tempaddress = offset;
   if (e1->getType()->get_string() == Int->get_string() && e2->getType()->get_string() == Int->get_string()) {
-    emit_mrmov(RBP,addr1,RAX,s);
-    emit_mrmov(RBP,addr2,RDX,s);
-    emit_cmp(RDX,RAX,s);
+    emit_mrmov(RBP, addr1, RAX, s);
+    emit_mrmov(RBP, addr2, RDX, s);
+    emit_cmp(RDX, RAX, s);
     int pos1 = labelNum ++;
     int pos2 = labelNum ++;
     s<<JL<<" "<<POSITION<<pos1<<endl;
     emit_mov("$0", RAX, s);
     s<<JMP<<" "<<POSITION<<pos2<<endl;
     s<<POSITION<<pos1<<":"<<endl;
-    emit_mov("$1",RAX,s);
+    emit_mov("$1", RAX, s);
     s<<POSITION<<pos2<<":"<<endl;
-    emit_rmmov(RAX,offset,RBP,s);
+    emit_rmmov(RAX, offset, RBP, s);
   } else if (e1->getType()->get_string() == Float->get_string() && e2->getType()->get_string() == Int->get_string()) {
     emit_mrmovsd(RBP, addr1, XMM1, s);
     emit_mrmov(RBP, addr2, RAX, s);
@@ -939,17 +939,17 @@ void Lt_class::code(ostream &s) {
     int pos1 = labelNum ++;
     int pos2 = labelNum ++;
     s<<JB<<" "<<POSITION<<pos1<<endl;
-    emit_mov("$0",RAX,s);
+    emit_mov("$0", RAX, s);
     s<<JMP<<" "<<POSITION<<pos2<< endl;
     s<<POSITION<<pos1<<":"<<endl;
-    emit_mov("$1",RAX,s);
+    emit_mov("$1", RAX, s);
     s<<POSITION<<pos2<<":"<<endl;
-    emit_rmmov(RAX,offset,RBP,s);
+    emit_rmmov(RAX, offset, RBP, s);
   } else if (e1->getType()->get_string() == Int->get_string() && e2->getType()->get_string() == Float->get_string()) {
-    emit_mrmov(RBP,addr1,RAX,s);
-    emit_int_to_float(RAX,XMM0,s);
-    emit_mrmovsd(RBP,addr2,XMM1,s);
-    emit_ucompisd(XMM0,XMM1,s);
+    emit_mrmov(RBP, addr1, RAX, s);
+    emit_int_to_float(RAX, XMM0, s);
+    emit_mrmovsd(RBP, addr2, XMM1, s);
+    emit_ucompisd(XMM0, XMM1, s);
     int pos1 = labelNum ++;
     int pos2 = labelNum ++;
     s<<JB<<" "<<POSITION<<pos1<<endl;

@@ -24,16 +24,16 @@ fib:
 	movq	-64(%rbp), %rax
 	movq	-72(%rbp), %rdx
 	cmpq	%rdx, %rax
-	jle	 .POS0
+	jle	 .POS2
 	movq	$0, %rax
-	jmp	 .POS1
-.POS0:
+	jmp	 .POS3
+.POS2:
 	movq	$1, %rax
-.POS1:
+.POS3:
 	movq	%rax, -80(%rbp)
 	movq	-80(%rbp), %rax
 	testq	%rax, %rax
-	jz	 .POS2
+	jz	 .POS0
 	subq	$8, %rsp
 	movq	$1, %rax
 	movq	%rax, -88(%rbp)
@@ -47,9 +47,9 @@ fib:
 	popq	 %rbx
 	leave	
 	ret	
-	jmp	 .POS3
-.POS2:
-.POS3:
+	jmp	 .POS1
+.POS0:
+.POS1:
 	subq	$8, %rsp
 	movq	$1, %rax
 	movq	%rax, -96(%rbp)
@@ -77,8 +77,8 @@ fib:
 	subq	$8, %rsp
 	movq	-112(%rbp), %rbx
 	movq	-136(%rbp), %r10
-	addq	%r10, %rbx
-	movq	%rbx, -144(%rbp)
+	addq	%rbx, %r10
+	movq	%r10, -144(%rbp)
 	movq	-144(%rbp), %rax
 	popq	 %r15
 	popq	 %r14
@@ -146,8 +146,8 @@ main:
 	subq	$8, %rsp
 	movq	-8(%rbp), %rbx
 	movq	-64(%rbp), %r10
-	addq	%r10, %rbx
-	movq	%rbx, -72(%rbp)
+	addq	%rbx, %r10
+	movq	%r10, -72(%rbp)
 	movq	-72(%rbp), %rax
 	movq	%rax, -8(%rbp)
 	jmp	 .POS4
